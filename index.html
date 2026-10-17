@@ -24,7 +24,7 @@ body {
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 6; }
 #blood-overlay.active { opacity: 1; }
 
-/* Интерфейс (Текст и Кнопки) */
+/* Интерфейс */
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: 20px 15px; z-index: 50;
@@ -72,7 +72,7 @@ body {
 }
 #notify.active { opacity: 1; }
 
-/* Кнопки для телефона и ПК */
+/* Кнопки управления */
 #touch-controls { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 70; }
 #touch-controls button {
   background: rgba(60,0,0,0.9); border: 2px solid #a00; color: #fff;
@@ -83,7 +83,7 @@ body {
 #touch-controls button:hover { background: #a00; }
 #touch-controls button span { font-size: 9px; margin-top: 2px; }
 
-/* МЕНЮ ПАУЗЫ (САМЫЙ ВЕРХНИЙ СЛОЙ) */
+/* МЕНЮ ПАУЗЫ */
 #menu-overlay {
   position: fixed; inset: 0; 
   background: rgba(5, 0, 0, 0.98);
@@ -111,7 +111,20 @@ body {
 .journal-item b { color: #f44; font-size: 16px; }
 .ach-item.unlocked { color: #8f8; }
 
-/* Для ПК */
+/* Экран старта (защита от блокировки звука) */
+#start-screen {
+  position: fixed; inset: 0; background: #000; z-index: 999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+#start-screen h1 { color: #f00; font-size: 36px; text-shadow: 0 0 20px #f00; margin-bottom: 30px; text-align: center; }
+#start-screen button {
+  background: #500; border: 2px solid #f00; color: #fff;
+  padding: 15px 40px; font-size: 20px; font-family: inherit;
+  cursor: pointer; border-radius: 8px; text-transform: uppercase;
+  box-shadow: 0 0 15px rgba(255,0,0,0.5); transition: 0.3s;
+}
+#start-screen button:hover { background: #a00; box-shadow: 0 0 30px rgba(255,0,0,0.8); }
+
 @media (min-width: 769px) {
   #ui { padding: 20px 50px; min-height: 30vh; }
   #text-box { font-size: 20px; }
@@ -162,6 +175,12 @@ body {
     <h2 id="menu-title">ПАУЗА</h2>
     <div id="menu-content"></div>
   </div>
+
+  <!-- ЭКРАН СТАРТА -->
+  <div id="start-screen">
+    <h1>BLOOD HORROR</h1>
+    <button onclick="startGame()">Войти во тьму</button>
+  </div>
 </div>
 
 <script>
@@ -185,6 +204,7 @@ let state = {
 };
 let soundOn = true, typeSpeed = 25;
 let drawInterval = null;
+let gameLoopRunning = false;
 
 function resize() {
   canvas.width = innerWidth; canvas.height = innerHeight;
@@ -201,10 +221,14 @@ function notify(msg) {
 }
 
 // ========== ЗВУК ==========
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audioCtx;
 const audio = {
+  init() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  },
   tone(freq, dur, type='sine', vol=0.1) {
-    if (!soundOn) return;
+    if (!soundOn || !audioCtx) return;
     try {
       const o = audioCtx.createOscillator(), g = audioCtx.createGain();
       o.type = type; o.frequency.value = freq; g.gain.value = vol;
@@ -230,7 +254,7 @@ const audio = {
   victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); }
 };
 
-// ========== КРОВЬ / ЭФФЕКТЫ ==========
+// ========== КРОВЬ ==========
 const gore = {
   particles: [], puddles: [],
   spawn(x, y, count=20) {
@@ -285,16 +309,8 @@ const sanity = {
 
 const staminaSys = {
   value: 100,
-  drain(n) {
-    this.value = Math.max(0, this.value - n);
-    document.getElementById('stamina').textContent = Math.floor(this.value);
-  },
-  regen() {
-    if (this.value < 100) {
-      this.value = Math.min(100, this.value + 0.2);
-      document.getElementById('stamina').textContent = Math.floor(this.value);
-    }
-  }
+  drain(n) { this.value = Math.max(0, this.value - n); document.getElementById('stamina').textContent = Math.floor(this.value); },
+  regen() { if (this.value < 100) { this.value = Math.min(100, this.value + 0.2); document.getElementById('stamina').textContent = Math.floor(this.value); } }
 };
 
 const batterySystem = {
@@ -407,7 +423,7 @@ const stats = { deaths: 0, endings: [], playtime: 0,
   render() { document.getElementById('minimap-loc').textContent = state.location; }
 };
 setInterval(() => {
-  if(state.paused) return;
+  if(state.paused || !gameLoopRunning) return;
   stats.playtime++;
   if (state.speedrunMode) state.speedrunTime++;
   if (stats.playtime >= 300) achievements.unlock('night_owl');
@@ -416,7 +432,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v13',
+  key: 'bloodhorror_ultimate_v14',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -528,7 +544,7 @@ function useItem(item) {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
+  if (e.key === 'Escape' && gameLoopRunning) {
     if (state.paused) closeMenu();
     else togglePauseMenu();
   }
@@ -747,7 +763,7 @@ function goTo(name) { if (scenes[name]) { state.scene = name; scenes[name](); sa
 let last = performance.now();
 function loop(now) {
   const dt = (now - last) / 1000; last = now;
-  if (!state.paused) {
+  if (!state.paused && gameLoopRunning) {
     gore.update();
     enemy.update(dt); 
     batterySystem.drain();
@@ -756,11 +772,16 @@ function loop(now) {
   }
   requestAnimationFrame(loop);
 }
-requestAnimationFrame(loop);
 
-// ========== СТАРТ ==========
-goTo('start');
-audio.ambient();
+// ========== ЗАПУСК ==========
+function startGame() {
+  document.getElementById('start-screen').style.display = 'none'; // Скрываем стартовый экран
+  audio.init(); // Инициализируем звук после клика пользователя
+  gameLoopRunning = true; // Запускаем цикл
+  requestAnimationFrame(loop);
+  goTo('start');
+  audio.ambient();
+}
 </script>
 </body>
 </html>
