@@ -242,7 +242,8 @@ const transText = document.getElementById('transition-text');
 let state = { 
   scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
   difficulty: 'normal', weaponDurability: 3, karma: 0, location: 'Комната', currentFloor: 1,
-  endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false
+  endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false,
+  savedSurvivor: false // Флаг сюжета: спасли ли выжившего
 };
 let soundOn = true, typeSpeed = 25;
 let drawInterval = null;
@@ -261,6 +262,32 @@ function notify(msg) {
   setTimeout(() => n.classList.remove('active'), 2500);
   if (navigator.vibrate) navigator.vibrate(50);
 }
+
+// ========== СЛУЧАЙНЫЕ СОБЫТИЯ ==========
+const randomEvents = {
+  trigger() {
+    // 20% шанс на случайное событие при переходе
+    if (Math.random() > 0.2) return false;
+
+    const events = [
+      { text: "Внезапно свет мигает, и ты слышишь шёпот за спиной...", type: 'scare' },
+      { text: "На полу лежит окровавленный бинт. Ты подбираешь его.", type: 'item_bandage' },
+      { text: "Из темноты доносится детский плач. Рассудок падает.", type: 'sanity' },
+      { text: "Ты находишь старую батарейку. Заряд фонарика восстановлен.", type: 'battery' },
+      { text: "Стены покрываются кровавыми надписями: 'БЕГИ'.", type: 'scare' }
+    ];
+
+    const ev = events[Math.floor(Math.random() * events.length)];
+    
+    if (ev.type === 'scare') { audio.scream(); sanity.decrease(10); flash.trigger('#ff0000'); }
+    if (ev.type === 'item_bandage') { inventory.add('бинт'); }
+    if (ev.type === 'sanity') { audio.echo(); sanity.decrease(15); }
+    if (ev.type === 'battery') { state.battery = Math.min(100, state.battery + 30); document.getElementById('battery').textContent = Math.floor(state.battery); }
+
+    notify("⚠️ " + ev.text);
+    return true;
+  }
+};
 
 // ========== КРОВЬ ==========
 const gore = {
@@ -288,15 +315,15 @@ const weather = {
   rainDrops: [],
   update() {
     if (state.location === 'Крыша' || state.scene === 'roof') {
-      if (this.rainDrops.length < 100) this.rainDrops.push({x: Math.random()*innerWidth, y: 0, speed: 10+Math.random()*10});
+      if (this.rainDrops.length < 150) this.rainDrops.push({x: Math.random()*innerWidth, y: 0, speed: 15+Math.random()*15});
       this.rainDrops.forEach((d, i) => { d.y += d.speed; if (d.y > innerHeight) this.rainDrops.splice(i, 1); });
     } else {
       this.rainDrops = [];
     }
     wctx.clearRect(0,0,innerWidth,innerHeight);
-    wctx.strokeStyle = 'rgba(150,150,255,0.4)';
-    wctx.lineWidth = 1;
-    this.rainDrops.forEach(d => { wctx.beginPath(); wctx.moveTo(d.x, d.y); wctx.lineTo(d.x, d.y+15); wctx.stroke(); });
+    wctx.strokeStyle = 'rgba(150,150,255,0.3)';
+    wctx.lineWidth = 2;
+    this.rainDrops.forEach(d => { wctx.beginPath(); wctx.moveTo(d.x, d.y); wctx.lineTo(d.x, d.y+20); wctx.stroke(); });
   }
 };
 
@@ -423,7 +450,7 @@ const journal = {
 
 const achievements = {
   unlocked: [],
-  defs: { 'first_death': 'Смерть', 'escape': 'Сбежал', 'caught': 'Пойман', 'true_ending': 'Истина', 'no_damage': 'Без урона', 'crafter': 'Крафтер', 'journalist': 'Архивист', 'night_owl': 'Ночной житель', 'speedrunner': 'Спидраннер', 'endless_10': 'Кошмар 10 волн' },
+  defs: { 'first_death': 'Смерть', 'escape': 'Сбежал', 'caught': 'Пойман', 'true_ending': 'Истина', 'good_samaritan': 'Добряк', 'crafter': 'Крафтер', 'journalist': 'Архивист', 'night_owl': 'Ночной житель', 'speedrunner': 'Спидраннер', 'endless_10': 'Кошмар 10 волн' },
   unlock(id) { if (!this.unlocked.includes(id) && this.defs[id]) { this.unlocked.push(id); notify('🏆 ' + this.defs[id]); audio.pickup(); } }
 };
 
@@ -440,20 +467,19 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v17',
+  key: 'bloodhorror_ultimate_v18',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
       weaponDurability: state.weaponDurability, karma: karma.value, endlessScore: state.endlessScore,
       sanity: sanity.value, inv: inventory.items, location: state.location, floor: state.currentFloor,
       stats: { deaths: stats.deaths, endings: stats.endings, playtime: stats.playtime },
-      sound: soundOn, typeSpeed, colorblind: state.colorblind,
+      sound: soundOn, typeSpeed, colorblind: state.colorblind, savedSurvivor: state.savedSurvivor,
       journal: journal.notes, achievements: achievements.unlocked
     }));
   },
   load() { const d = localStorage.getItem(this.key); return d ? JSON.parse(d) : null; },
-  clear() { localStorage.removeItem(this.key); },
-  exists() { return this.load() !== null; }
+  clear() { localStorage.removeItem(this.key); }
 };
 function saveGame() { save.save(); notify('💾 Сохранено'); }
 function loadState(d) {
@@ -461,7 +487,7 @@ function loadState(d) {
   state.difficulty = d.difficulty || 'normal'; state.weaponDurability = d.weaponDurability ?? 3;
   state.endlessScore = d.endlessScore || 0; karma.value = d.karma || 0;
   state.location = d.location || 'Комната'; state.currentFloor = d.floor || 1;
-  state.colorblind = d.colorblind || false;
+  state.colorblind = d.colorblind || false; state.savedSurvivor = d.savedSurvivor || false;
   sanity.set(d.sanity ?? 100); inventory.items = d.inv || []; document.getElementById('inv-count').textContent = inventory.items.length;
   if (d.stats) { stats.deaths = d.stats.deaths || 0; stats.endings = d.stats.endings || []; stats.playtime = d.stats.playtime || 0; }
   soundOn = d.sound ?? true; typeSpeed = d.typeSpeed ?? 25;
@@ -475,7 +501,7 @@ function loadState(d) {
 
 function startNewGame() {
   save.clear();
-  state.hp = 100; state.battery = 100; staminaSys.value = 100; state.karma = 0; karma.value = 0;
+  state.hp = 100; state.battery = 100; staminaSys.value = 100; state.karma = 0; karma.value = 0; state.savedSurvivor = false;
   sanity.set(100); inventory.items = []; document.getElementById('inv-count').textContent = 0;
   stats.deaths = 0; stats.endings = []; stats.playtime = 0; journal.notes = [];
   closeMenu();
@@ -519,6 +545,7 @@ function renderMenu(type) {
     menuTitle.textContent = 'КРАФТ';
     menuContent.innerHTML = `<div style="text-align:left; color:#aaa; margin-bottom:20px; max-width:300px;"><p>Бинт + Таблетки = Аптечка</p><p>Нож + Камень = Заточенный нож</p></div>
       <button onclick="if(inventory.craft('бинт','таблетки','аптечка')){achievements.unlock('crafter'); renderMenu('inventory');} else notify('Нет')">Создать аптечку</button>
+      <button onclick="if(inventory.craft('нож','камень','заточенный нож')){renderMenu('inventory');} else notify('Нет камня или ножа')">Заточить нож</button>
       <button onclick="renderMenu('inventory')">Назад</button>`;
   } 
   else if (type === 'settings') {
@@ -569,111 +596,99 @@ function showChoices(list) {
 }
 function clearChoices() { choicesBox.innerHTML = ''; }
 
-// НОВАЯ, УЛУЧШЕННАЯ ГРАФИКА
+// Отрисовка сцен (Улучшенная графика)
 function renderBackground(sceneId) {
   if (drawInterval) clearInterval(drawInterval);
-  
   const colors = { start: '#2a2a2a', look_around: '#2a2a2a', corner: '#3a1010', door: '#202530', corridor: '#151520', basement: '#2a0505', attic: '#252010', morgue: '#0a1a1a', floor2: '#202025', roof: '#101525', default: '#222', endless: '#300000' };
   const bgCol = colors[sceneId] || colors.default;
 
   const drawFrame = () => {
-    // 1. Базовый цвет стен
     ctx.fillStyle = bgCol; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Пол (паркет/плитка)
+    // Пол
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height); ctx.lineTo(0, canvas.height); ctx.fill();
-    
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; ctx.lineWidth = 1;
-    for (let i = 0; i < canvas.width; i += 40) {
-      ctx.beginPath(); ctx.moveTo(i, canvas.height * 0.6); ctx.lineTo(i - 50, canvas.height); ctx.stroke();
-    }
+    for (let i = 0; i < canvas.width; i += 40) { ctx.beginPath(); ctx.moveTo(i, canvas.height * 0.6); ctx.lineTo(i - 50, canvas.height); ctx.stroke(); }
 
-    // 3. Стены и перспектива
+    // Стены
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(canvas.width * 0.2, canvas.height * 0.4); ctx.lineTo(canvas.width * 0.2, canvas.height * 0.6); ctx.lineTo(0, canvas.height * 0.6); ctx.fill();
     ctx.beginPath(); ctx.moveTo(canvas.width, 0); ctx.lineTo(canvas.width * 0.8, canvas.height * 0.4); ctx.lineTo(canvas.width * 0.8, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height * 0.6); ctx.fill();
     
     // Задняя стена
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.fillRect(canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.6, canvas.height * 0.3);
-    // Обои на задней стене
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)'; ctx.lineWidth = 2;
-    for (let i = canvas.width * 0.2; i < canvas.width * 0.8; i += 20) {
-      ctx.beginPath(); ctx.moveTo(i, canvas.height * 0.3); ctx.lineTo(i, canvas.height * 0.6); ctx.stroke();
-    }
-
-    // 4. Детали окружения в зависимости от локации
+    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.6, canvas.height * 0.3);
+    
+    // --- ДЕТАЛИ ЛОКАЦИЙ ---
     if (sceneId === 'start' || sceneId === 'look_around') {
         // Окно
-        ctx.fillStyle = '#0a1520'; // Ночное небо
-        ctx.fillRect(canvas.width * 0.7, canvas.height * 0.35, canvas.width * 0.15, canvas.height * 0.2);
-        ctx.strokeStyle = '#444'; ctx.lineWidth = 4;
-        ctx.strokeRect(canvas.width * 0.7, canvas.height * 0.35, canvas.width * 0.15, canvas.height * 0.2);
+        ctx.fillStyle = '#0a1520'; ctx.fillRect(canvas.width * 0.7, canvas.height * 0.35, canvas.width * 0.15, canvas.height * 0.2);
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 4; ctx.strokeRect(canvas.width * 0.7, canvas.height * 0.35, canvas.width * 0.15, canvas.height * 0.2);
         ctx.beginPath(); ctx.moveTo(canvas.width * 0.775, canvas.height * 0.35); ctx.lineTo(canvas.width * 0.775, canvas.height * 0.55); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(canvas.width * 0.7, canvas.height * 0.45); ctx.lineTo(canvas.width * 0.85, canvas.height * 0.45); ctx.stroke();
-        
         // Дверь
-        ctx.fillStyle = '#151515';
-        ctx.fillRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 5;
-        ctx.strokeRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
+        ctx.fillStyle = '#151515'; ctx.fillRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 5; ctx.strokeRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
         // Ручка
         ctx.fillStyle = '#666'; ctx.beginPath(); ctx.arc(canvas.width * 0.58, canvas.height * 0.52, 5, 0, Math.PI*2); ctx.fill();
-
-    } else if (sceneId === 'basement') {
-        // Крюки
-        ctx.strokeStyle = '#555'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(canvas.width * 0.3, 0); ctx.lineTo(canvas.width * 0.3, canvas.height * 0.25); ctx.stroke();
-        ctx.beginPath(); ctx.arc(canvas.width * 0.3, canvas.height * 0.25, 10, Math.PI, 0); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(canvas.width * 0.6, 0); ctx.lineTo(canvas.width * 0.6, canvas.height * 0.3); ctx.stroke();
-        ctx.beginPath(); ctx.arc(canvas.width * 0.6, canvas.height * 0.3, 10, Math.PI, 0); ctx.stroke();
-
-    } else if (sceneId === 'floor2') {
-        // Кроватка
-        ctx.strokeStyle = '#555'; ctx.lineWidth = 4;
+    } 
+    else if (sceneId === 'corridor') {
+        // Мигающая лампа
+        if (Math.random() > 0.1) {
+            ctx.fillStyle = 'rgba(200, 200, 150, 0.2)';
+            ctx.beginPath(); ctx.arc(canvas.width/2, 0, 200, 0, Math.PI); ctx.fill();
+        }
+        // Отпечатки
+        ctx.fillStyle = 'rgba(100,0,0,0.4)';
+        ctx.fillRect(canvas.width * 0.3, canvas.height * 0.45, 20, 30);
+        ctx.fillRect(canvas.width * 0.65, canvas.height * 0.4, 20, 30);
+    }
+    else if (sceneId === 'basement') {
+        // Трубы
+        ctx.strokeStyle = '#555'; ctx.lineWidth = 8;
+        ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.2); ctx.lineTo(canvas.width, canvas.height * 0.25); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(canvas.width * 0.3, 0); ctx.lineTo(canvas.width * 0.3, canvas.height * 0.3); ctx.stroke();
+        // Капли крови с труб
+        ctx.fillStyle = 'red';
+        ctx.beginPath(); ctx.arc(canvas.width * 0.5, canvas.height * 0.3, 3, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(canvas.width * 0.5, canvas.height * 0.35, 2, 0, Math.PI*2); ctx.fill();
+    }
+    else if (sceneId === 'floor2') {
+        // Колыбель
+        ctx.strokeStyle = '#444'; ctx.lineWidth = 6;
         ctx.strokeRect(canvas.width * 0.6, canvas.height * 0.5, canvas.width * 0.2, canvas.height * 0.15);
-        // Игрушка
-        ctx.fillStyle = '#700'; ctx.beginPath(); ctx.arc(canvas.width * 0.65, canvas.height * 0.55, 10, 0, Math.PI*2); ctx.fill();
-
-    } else if (sceneId === 'roof') {
-        // Перила и город внизу
+        // Игрушки
+        ctx.fillStyle = '#700'; ctx.beginPath(); ctx.arc(canvas.width * 0.65, canvas.height * 0.55, 15, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#050'; ctx.beginPath(); ctx.arc(canvas.width * 0.75, canvas.height * 0.58, 10, 0, Math.PI*2); ctx.fill();
+    }
+    else if (sceneId === 'roof') {
+        // Город
         ctx.fillStyle = '#050510'; ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.4);
+        // Молния
+        if (Math.random() < 0.02) { flash.trigger('#aaa'); audio.creak(); }
+        // Перила
         ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height * 0.6); ctx.stroke();
         for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, canvas.height*0.6); ctx.lineTo(i, canvas.height); ctx.stroke(); }
-
-    } else {
-        // Стандартная дверь
-        ctx.fillStyle = '#151515';
-        ctx.fillRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 5;
-        ctx.strokeRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
+    }
+    else {
+        // Дверь по умолчанию
+        ctx.fillStyle = '#151515'; ctx.fillRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 5; ctx.strokeRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
     }
 
     gore.draw();
 
-    // 5. ТЬМА И ФОНАРИК (Сделано светлее)
+    // Тьма и Фонарик
     dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
-    
-    // Уровень базовой тьмы (0.4 вместо 0.75 — теперь видно комнату)
-    let baseDarkness = 0.4;
-    if (['start', 'safe'].includes(sceneId)) baseDarkness = 0.1; // В безопасной зоне почти нет тьмы
-    
-    dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; 
-    dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
+    let baseDarkness = 0.4; if (['start', 'safe'].includes(sceneId)) baseDarkness = 0.1;
+    dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
     
     if (state.flashlightOn) {
-      // Яркий круг света, который вырезает тьму
       const cx = darkCanvas.width / 2, cy = darkCanvas.height / 2;
       const grad = dctx.createRadialGradient(cx, cy, 50, cx, cy, Math.max(canvas.width, canvas.height) * 0.7);
-      grad.addColorStop(0, 'rgba(0,0,0,0)'); 
-      grad.addColorStop(0.5, 'rgba(0,0,0,0.1)');
-      grad.addColorStop(1, `rgba(0,0,0,${baseDarkness})`);
-      dctx.globalCompositeOperation = 'destination-out'; 
-      dctx.fillStyle = grad;
-      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height); 
-      dctx.globalCompositeOperation = 'source-over';
+      grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(0.5, 'rgba(0,0,0,0.1)'); grad.addColorStop(1, `rgba(0,0,0,${baseDarkness})`);
+      dctx.globalCompositeOperation = 'destination-out'; dctx.fillStyle = grad;
+      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height); dctx.globalCompositeOperation = 'source-over';
     }
     
     weather.update();
@@ -681,12 +696,12 @@ function renderBackground(sceneId) {
   drawFrame(); drawInterval = setInterval(drawFrame, 33);
 }
 
-// Переход с анимацией
+// Переход с анимацией и шансом на событие
 function goTo(name) { 
     if (scenes[name]) { 
         state.scene = name; 
         
-        const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', blood_room: 'Кровавая комната' };
+        const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь' };
         if (locNames[name]) {
             transText.textContent = locNames[name];
             transText.classList.add('show');
@@ -694,6 +709,7 @@ function goTo(name) {
         }
 
         scenes[name](); 
+        randomEvents.trigger(); // Вызов случайного события
         save.save(); 
     } 
 }
@@ -759,13 +775,25 @@ const scenes = {
   },
   npc: () => {
     renderBackground('corridor'); state.location = 'Выживший';
-    showText('Из тени выходит человек в окровавленном халате. "Помоги... Я не монстр. У меня есть таблетки, забери их, только не оставляй меня здесь".');
-    showChoices([
-      { label: 'Помочь (Карма +1)', action: () => { karma.add(1); inventory.add('таблетки'); sanity.increase(10); goTo('safe'); } },
-      { label: 'Забрать силой (Карма -1)', action: () => { karma.add(-1); inventory.add('таблетки'); inventory.add('бинт'); sanity.decrease(10); goTo('safe'); } },
-      { label: 'Убить его (Опасно)', action: () => { if (inventory.has('нож')) { gore.spawn(canvas.width/2, canvas.height/2, 50); audio.scream(); karma.add(-2); notify('Ты убил выжившего'); goTo('safe'); } else notify('Нужен нож!'); } },
-      { label: 'Уйти', action: () => goTo('safe') }
-    ]);
+    if (!state.savedSurvivor) {
+      showText('Из тени выходит человек в окровавленном халате. "Помоги... Я не монстр. У меня есть таблетки, забери их, только не оставляй меня здесь".');
+      showChoices([
+        { label: 'Помочь (Карма +1)', action: () => { karma.add(1); inventory.add('таблетки'); sanity.increase(10); state.savedSurvivor = true; achievements.unlock('good_samaritan'); goTo('survivor_camp'); } },
+        { label: 'Забрать силой (Карма -1)', action: () => { karma.add(-1); inventory.add('таблетки'); inventory.add('бинт'); sanity.decrease(10); goTo('safe'); } },
+        { label: 'Уйти', action: () => goTo('safe') }
+      ]);
+    } else {
+      showText('Ты снова встретил выжившего. Он благодарен тебе. "Я нашел кое-что для тебя, держи".');
+      showChoices([
+        { label: 'Взять подарок (Аптечка)', action: () => { inventory.add('аптечка'); notify('Выживший дал аптечку'); goTo('safe'); } }
+      ]);
+    }
+  },
+  survivor_camp: () => {
+    renderBackground('corridor'); state.location = 'Лагерь выжившего';
+    showText('Выживший привел тебя в тайную комнату. "Здесь безопасно. Я спрячусь тут. А тебе вот, пригодится". Он дает тебе топор.');
+    inventory.add('топор');
+    showChoices([{ label: 'В коридор', action: () => goTo('corridor') }]);
   },
   library: () => {
     renderBackground('corridor'); state.location = 'Библиотека';
