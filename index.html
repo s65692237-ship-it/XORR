@@ -16,15 +16,15 @@ body {
 
 /* Слои графики */
 #scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
-#darkness-mask { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-#weather { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+#darkness-mask { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+#weather { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 #fog { position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 30%, rgba(100,0,0,0.15) 100%); animation: fogPulse 4s infinite alternate; }
 @keyframes fogPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
 #vignette { position: absolute; inset: 0; pointer-events: none; z-index: 5; background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.9) 100%); }
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 6; }
 #blood-overlay.active { opacity: 1; }
 
-/* Интерфейс */
+/* Интерфейс (Текст и Кнопки) */
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: 20px 15px; z-index: 50;
@@ -135,7 +135,7 @@ body {
 <body>
 <div id="game">
   <canvas id="scene"></canvas>
-  <div id="darkness-mask"></div>
+  <canvas id="darkness-mask"></canvas> <!-- ИСПРАВЛЕНО: теперь это canvas, а не div -->
   <canvas id="weather"></canvas>
   <div id="fog"></div>
   <div id="vignette"></div>
@@ -184,6 +184,39 @@ body {
 </div>
 
 <script>
+// ========== ИНИЦИАЛИЗАЦИЯ ЗВУКА ==========
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const audio = {
+  init() {
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  },
+  tone(freq, dur, type='sine', vol=0.1) {
+    if (!soundOn) return;
+    try {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq; g.gain.value = vol;
+      o.connect(g).connect(audioCtx.destination); o.start();
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      o.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
+  },
+  drip() { this.tone(800, 0.15, 'sine', 0.08); },
+  creak() { this.tone(120, 0.6, 'sawtooth', 0.06); },
+  scream() { this.tone(400, 0.8, 'sawtooth', 0.15); setTimeout(() => this.tone(300, 0.6, 'square', 0.1), 100); },
+  heartbeat() { this.tone(60, 0.15, 'sine', 0.2); setTimeout(() => this.tone(50, 0.15, 'sine', 0.15), 200); },
+  ambient() { 
+    if (!soundOn) return;
+    const theme = state.scene === 'basement' ? 45 : state.scene === 'corridor' ? 55 : 40;
+    this.tone(theme, 4, 'sine', 0.02); 
+    setTimeout(() => this.ambient(), 4000); 
+  },
+  pickup() { this.tone(600, 0.1, 'sine', 0.15); setTimeout(() => this.tone(900, 0.15, 'sine', 0.1), 80); },
+  unlock() { this.tone(400, 0.1, 'square', 0.1); setTimeout(() => this.tone(600, 0.2, 'square', 0.1), 100); },
+  echo() { this.tone(200, 0.4, 'sawtooth', 0.08); setTimeout(() => this.tone(180, 0.4, 'sawtooth', 0.06), 200); },
+  hit() { this.tone(150, 0.2, 'square', 0.15); },
+  victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); }
+};
+
 // ========== СОСТОЯНИЕ ==========
 const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d');
@@ -219,40 +252,6 @@ function notify(msg) {
   setTimeout(() => n.classList.remove('active'), 2500);
   if (navigator.vibrate) navigator.vibrate(50);
 }
-
-// ========== ЗВУК ==========
-let audioCtx;
-const audio = {
-  init() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
-  },
-  tone(freq, dur, type='sine', vol=0.1) {
-    if (!soundOn || !audioCtx) return;
-    try {
-      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-      o.type = type; o.frequency.value = freq; g.gain.value = vol;
-      o.connect(g).connect(audioCtx.destination); o.start();
-      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-      o.stop(audioCtx.currentTime + dur);
-    } catch(e) {}
-  },
-  drip() { this.tone(800, 0.15, 'sine', 0.08); },
-  creak() { this.tone(120, 0.6, 'sawtooth', 0.06); },
-  scream() { this.tone(400, 0.8, 'sawtooth', 0.15); setTimeout(() => this.tone(300, 0.6, 'square', 0.1), 100); },
-  heartbeat() { this.tone(60, 0.15, 'sine', 0.2); setTimeout(() => this.tone(50, 0.15, 'sine', 0.15), 200); },
-  ambient() { 
-    if (!soundOn) return;
-    const theme = state.scene === 'basement' ? 45 : state.scene === 'corridor' ? 55 : 40;
-    this.tone(theme, 4, 'sine', 0.02); 
-    setTimeout(() => this.ambient(), 4000); 
-  },
-  pickup() { this.tone(600, 0.1, 'sine', 0.15); setTimeout(() => this.tone(900, 0.15, 'sine', 0.1), 80); },
-  unlock() { this.tone(400, 0.1, 'square', 0.1); setTimeout(() => this.tone(600, 0.2, 'square', 0.1), 100); },
-  echo() { this.tone(200, 0.4, 'sawtooth', 0.08); setTimeout(() => this.tone(180, 0.4, 'sawtooth', 0.06), 200); },
-  hit() { this.tone(150, 0.2, 'square', 0.15); },
-  victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); }
-};
 
 // ========== КРОВЬ ==========
 const gore = {
@@ -432,7 +431,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v14',
+  key: 'bloodhorror_ultimate_v15',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
