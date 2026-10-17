@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Blood Horror</title>
+<title>Blood Horror: Final Cut</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
@@ -12,164 +12,143 @@ body {
   overflow: hidden; height: 100vh;
   touch-action: manipulation;
 }
-#game { position: relative; width: 100vw; height: 100vh; }
-#scene { position: absolute; inset: 0; width: 100%; height: 100%; background: #0a0a0a; }
-#darkness { position: absolute; inset: 0; pointer-events: none; }
+#game { position: relative; width: 100vw; height: 100vh; background: #050505; overflow: hidden; }
+#scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+#darkness-mask { position: absolute; inset: 0; pointer-events: none; }
+#vignette { 
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.9) 100%);
+}
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; }
 #blood-overlay.active { opacity: 1; }
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: 20px;
-  background: linear-gradient(transparent, rgba(0,0,0,0.95));
-  min-height: 220px;
+  background: linear-gradient(transparent, rgba(0,0,0,0.95) 40%);
   display: flex; flex-direction: column; justify-content: flex-end;
-  max-height: 60vh; overflow-y: auto;
+  max-height: 60vh; pointer-events: none; z-index: 10;
 }
-#stats { display: flex; gap: 16px; font-size: 14px; margin-bottom: 12px; opacity: 0.85; flex-wrap: wrap; }
-#text-box { font-size: 18px; line-height: 1.5; margin-bottom: 16px; min-height: 60px; text-shadow: 0 0 4px #000; }
-#choices { display: flex; flex-direction: column; gap: 8px; }
+#stats { display: flex; gap: 12px; font-size: 14px; margin-bottom: 12px; opacity: 0.85; flex-wrap: wrap; text-shadow: 0 0 4px #000; align-items: center; }
+.stat-badge { background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; border: 1px solid #333; }
+#text-box { 
+  font-size: 18px; line-height: 1.5; margin-bottom: 16px; min-height: 60px; 
+  text-shadow: 0 0 6px #000, 0 0 3px #000; pointer-events: auto;
+}
+#choices { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
 .choice-btn {
-  background: #1a0000; border: 1px solid #5a0000; color: #ccc;
+  background: rgba(26, 0, 0, 0.75); border: 1px solid #5a0000; color: #ccc;
   padding: 12px 16px; text-align: left; cursor: pointer;
   font-family: inherit; font-size: 15px;
-  transition: background 0.2s, color 0.2s;
-  border-radius: 6px;
+  transition: all 0.2s; border-radius: 6px; backdrop-filter: blur(4px);
 }
-.choice-btn:hover { background: #3a0000; color: #fff; }
+.choice-btn:hover { background: rgba(58, 0, 0, 0.9); color: #fff; border-color: #a00; transform: translateX(4px); }
 .choice-btn:active { background: #5a0000; }
-#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; }
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 99; }
 #flash.active { opacity: 1; }
 #glitch {
   position: fixed; inset: 0; pointer-events: none; opacity: 0;
-  background: repeating-linear-gradient(0deg, rgba(255,0,0,0.05) 0px, transparent 2px, transparent 4px);
-  transition: opacity 0.5s;
+  background: repeating-linear-gradient(0deg, rgba(255,0,0,0.08) 0px, transparent 2px, transparent 4px);
+  transition: opacity 0.5s; z-index: 98;
 }
 #glitch.active { opacity: 1; }
-#shake { position: fixed; inset: 0; pointer-events: none; }
+#shake { position: fixed; inset: 0; pointer-events: none; z-index: 97; }
 #shake.active { animation: shake 0.3s infinite; }
 @keyframes shake {
   0%,100% { transform: translate(0,0); }
-  25% { transform: translate(-3px,2px); }
-  50% { transform: translate(2px,-3px); }
-  75% { transform: translate(-2px,-2px); }
+  25% { transform: translate(-4px,3px); }
+  50% { transform: translate(3px,-4px); }
+  75% { transform: translate(-3px,-2px); }
 }
-#pause-menu, #settings-menu, #journal-menu, #achievements-menu, #craft-menu, #difficulty-menu, #records-menu {
+#menu-overlay {
   position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-  z-index: 100; padding: 20px; overflow-y: auto;
+  display: none; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px;
+  z-index: 100; padding: 40px 20px; overflow-y: auto;
 }
-#pause-menu.active, #settings-menu.active, #journal-menu.active, #achievements-menu.active, #craft-menu.active, #difficulty-menu.active, #records-menu.active { display: flex; }
-#pause-menu h2, #settings-menu h2, #journal-menu h2, #achievements-menu h2, #craft-menu h2, #difficulty-menu h2, #records-menu h2 { color: #a00; font-size: 28px; margin-bottom: 16px; }
-#pause-menu button, #settings-menu button, #journal-menu button, #achievements-menu button, #craft-menu button, #difficulty-menu button, #records-menu button {
+#menu-overlay.active { display: flex; }
+#menu-overlay h2 { color: #a00; font-size: 28px; margin-bottom: 16px; text-shadow: 0 0 10px #f00; }
+#menu-overlay button {
   background: #1a0000; border: 1px solid #5a0000; color: #ccc;
   padding: 12px 32px; cursor: pointer; font-family: inherit; font-size: 16px;
-  min-width: 240px; border-radius: 6px;
+  min-width: 240px; border-radius: 6px; transition: background 0.2s;
 }
-#pause-menu button:hover, #settings-menu button:hover, #journal-menu button:hover, #achievements-menu button:hover, #craft-menu button:hover, #difficulty-menu button:hover, #records-menu button:hover { background: #3a0000; color: #fff; }
+#menu-overlay button:hover { background: #3a0000; color: #fff; }
 #notify {
   position: fixed; top: 20px; right: 20px;
   background: rgba(40,0,0,0.95); border: 1px solid #700;
   padding: 10px 16px; color: #f88; font-size: 14px;
   opacity: 0; transition: opacity 0.3s; pointer-events: none;
-  max-width: 300px; border-radius: 6px;
+  max-width: 300px; border-radius: 6px; z-index: 101;
 }
 #notify.active { opacity: 1; }
-#achievements {
+#achievements-hud {
   position: fixed; top: 20px; left: 20px; font-size: 12px;
-  color: #666; line-height: 1.6; pointer-events: none;
+  color: #666; line-height: 1.6; pointer-events: none; text-shadow: 0 0 4px #000; z-index: 10;
 }
-#touch-controls { position: fixed; bottom: 10px; left: 10px; display: none; gap: 10px; z-index: 50; }
+#touch-controls { position: fixed; bottom: 10px; left: 10px; display: none; gap: 10px; z-index: 102; }
 #touch-controls button {
   background: rgba(60,0,0,0.8); border: 1px solid #700; color: #f88;
-  width: 60px; height: 60px; border-radius: 50%; font-size: 20px; cursor: pointer;
+  width: 50px; height: 50px; border-radius: 50%; font-size: 18px; cursor: pointer;
 }
+/* ИНВЕНТАРЬ СЕТКА */
+#inventory-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 10px;
+  width: 100%; max-width: 500px; margin-bottom: 20px;
+}
+.inv-item {
+  background: rgba(40,0,0,0.5); border: 1px solid #5a0000; padding: 10px; border-radius: 6px;
+  text-align: center; font-size: 12px; color: #f88; cursor: pointer; transition: 0.2s;
+}
+.inv-item:hover { background: rgba(80,0,0,0.7); border-color: #a00; }
+.inv-item.selected { border-color: #f00; background: rgba(100,0,0,0.8); }
+.inv-actions { display: flex; gap: 10px; margin-bottom: 20px; }
+#journal-list, #ach-list, #records-list { width: 100%; max-width: 600px; text-align: left; margin-bottom: 20px; }
+.journal-item, .ach-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+.journal-item b { color: #c33; font-size: 16px; }
+.ach-item.unlocked { color: #8f8; }
 @media (max-width: 768px) {
   #touch-controls { display: flex; }
-  #ui { padding: 14px; min-height: 240px; }
+  #ui { padding: 14px; max-height: 70vh; }
   .choice-btn { padding: 14px 16px; font-size: 16px; }
+  #inventory-grid { grid-template-columns: repeat(3, 1fr); }
 }
 </style>
 </head>
 <body>
 <div id="game">
   <canvas id="scene"></canvas>
-  <canvas id="darkness"></canvas>
+  <div id="darkness-mask"></div>
+  <div id="vignette"></div>
   <div id="blood-overlay"></div>
   <div id="shake"></div>
+  
   <div id="ui">
     <div id="stats">
-      <span>❤️ <span id="hp">100</span></span>
-      <span>🧠 <span id="sanity">100</span></span>
-      <span>🔋 <span id="battery">100</span></span>
-      <span>🎒 <span id="inv">—</span></span>
+      <span class="stat-badge">❤️ <span id="hp">100</span></span>
+      <span class="stat-badge">🧠 <span id="sanity">100</span></span>
+      <span class="stat-badge">🔋 <span id="battery">100</span></span>
+      <span class="stat-badge">⚖️ <span id="karma">0</span></span>
+      <span class="stat-badge">🎒 <span id="inv-count">0</span></span>
     </div>
     <div id="text-box"></div>
     <div id="choices"></div>
   </div>
+
   <div id="touch-controls">
-    <button onclick="togglePause()">☰</button>
+    <button onclick="toggleMenu()">☰</button>
     <button onclick="useFlashlight()">🔦</button>
     <button onclick="useWeapon()">🔪</button>
   </div>
+
   <div id="flash"></div>
   <div id="glitch"></div>
   <div id="notify"></div>
-  <div id="achievements"></div>
+  <div id="achievements-hud"></div>
 
-  <div id="pause-menu">
-    <h2>ПАУЗА</h2>
-    <button onclick="togglePause()">Продолжить</button>
-    <button onclick="saveGame()">Сохранить</button>
-    <button onclick="loadGame()">Загрузить</button>
-    <button onclick="openSettings()">Настройки</button>
-    <button onclick="openJournal()">Дневник</button>
-    <button onclick="openAchievements()">Достижения</button>
-    <button onclick="openCraft()">Крафт</button>
-    <button onclick="openDifficulty()">Сложность</button>
-    <button onclick="openRecords()">Рекорды</button>
-    <button onclick="exportSave()">Экспорт сохранения</button>
-    <button onclick="importSave()">Импорт сохранения</button>
-    <button onclick="newGame()">Новая игра</button>
-  </div>
-
-  <div id="settings-menu">
-    <h2>НАСТРОЙКИ</h2>
-    <button onclick="toggleSound()">Звук: <span id="sound-state">ВКЛ</span></button>
-    <button onclick="cycleTypeSpeed()">Скорость текста: <span id="type-speed">25</span>мс</button>
-    <button onclick="cycleFontSize()">Размер шрифта: <span id="font-size">18</span>px</button>
-    <button onclick="closeMenus()">Назад</button>
-  </div>
-
-  <div id="journal-menu">
-    <h2>ДНЕВНИК</h2>
-    <div id="journal-content" style="max-width:600px; color:#aaa; line-height:1.7; margin-bottom:16px;"></div>
-    <button onclick="closeMenus()">Назад</button>
-  </div>
-
-  <div id="achievements-menu">
-    <h2>ДОСТИЖЕНИЯ</h2>
-    <div id="ach-content" style="max-width:600px; color:#aaa; line-height:1.7; margin-bottom:16px;"></div>
-    <button onclick="closeMenus()">Назад</button>
-  </div>
-
-  <div id="craft-menu">
-    <h2>КРАФТ</h2>
-    <div id="craft-content" style="max-width:600px; color:#aaa; line-height:1.7; margin-bottom:16px;"></div>
-    <button onclick="closeMenus()">Назад</button>
-  </div>
-
-  <div id="difficulty-menu">
-    <h2>СЛОЖНОСТЬ</h2>
-    <button onclick="setDifficulty('easy')">Лёгкая</button>
-    <button onclick="setDifficulty('normal')">Нормальная</button>
-    <button onclick="setDifficulty('hard')">Хардкор</button>
-    <button onclick="closeMenus()">Назад</button>
-  </div>
-
-  <div id="records-menu">
-    <h2>РЕКОРДЫ</h2>
-    <div id="records-content" style="max-width:600px; color:#aaa; line-height:1.7; margin-bottom:16px;"></div>
-    <button onclick="closeMenus()">Назад</button>
+  <!-- УНИВЕРСАЛЬНОЕ МЕНЮ -->
+  <div id="menu-overlay">
+    <h2 id="menu-title">МЕНЮ</h2>
+    <div id="menu-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    <button onclick="closeMenu()" style="margin-top: 20px;">Назад</button>
   </div>
 </div>
 
@@ -177,13 +156,20 @@ body {
 // ========== СОСТОЯНИЕ ==========
 const canvas = document.getElementById('scene');
 const ctx = canvas.getContext('2d');
-const darkCanvas = document.getElementById('darkness');
+const darkCanvas = document.getElementById('darkness-mask');
 const dctx = darkCanvas.getContext('2d');
 const textBox = document.getElementById('text-box');
 const choicesBox = document.getElementById('choices');
 
-let state = { scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, difficulty: 'normal', weaponDurability: 3 };
-let soundOn = true, typeSpeed = 25, fontSize = 18, hiding = false;
+let state = { 
+  scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, 
+  difficulty: 'normal', weaponDurability: 3, karma: 0, 
+  endlessMode: false, endlessScore: 0, endlessWave: 1,
+  testMode: false, testTime: 0
+};
+let soundOn = true, typeSpeed = 25, fontSize = 18;
+let drawInterval = null;
+
 function resize() {
   canvas.width = innerWidth; canvas.height = innerHeight;
   darkCanvas.width = innerWidth; darkCanvas.height = innerHeight;
@@ -193,64 +179,71 @@ window.addEventListener('resize', resize); resize();
 function notify(msg) {
   const n = document.getElementById('notify');
   n.textContent = msg; n.classList.add('active');
-  setTimeout(() => n.classList.remove('active'), 2200);
+  setTimeout(() => n.classList.remove('active'), 2500);
 }
 
-// ========== ЗВУК ==========
+// ========== ЗВУК (WEB AUDIO) ==========
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 const audio = {
   tone(freq, dur, type='sine', vol=0.1) {
     if (!soundOn) return;
-    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
-    o.type = type; o.frequency.value = freq; g.gain.value = vol;
-    o.connect(g).connect(audioCtx.destination); o.start();
-    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
-    o.stop(audioCtx.currentTime + dur);
+    try {
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = type; o.frequency.value = freq; g.gain.value = vol;
+      o.connect(g).connect(audioCtx.destination); o.start();
+      g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+      o.stop(audioCtx.currentTime + dur);
+    } catch(e) {}
   },
   drip() { this.tone(800, 0.15, 'sine', 0.08); },
   creak() { this.tone(120, 0.6, 'sawtooth', 0.06); },
   scream() { this.tone(400, 0.8, 'sawtooth', 0.15); setTimeout(() => this.tone(300, 0.6, 'square', 0.1), 100); },
-  step() { this.tone(80, 0.1, 'triangle', 0.1); },
   heartbeat() { this.tone(60, 0.15, 'sine', 0.2); setTimeout(() => this.tone(50, 0.15, 'sine', 0.15), 200); },
-  ambient() { this.tone(40, 3, 'sine', 0.03); setTimeout(() => this.ambient(), 3000); },
+  ambient() { 
+    if (!soundOn) return;
+    const theme = state.scene === 'basement' ? 45 : state.scene === 'corridor' ? 55 : 40;
+    this.tone(theme, 4, 'sine', 0.02); 
+    setTimeout(() => this.ambient(), 4000); 
+  },
   pickup() { this.tone(600, 0.1, 'sine', 0.15); setTimeout(() => this.tone(900, 0.15, 'sine', 0.1), 80); },
   unlock() { this.tone(400, 0.1, 'square', 0.1); setTimeout(() => this.tone(600, 0.2, 'square', 0.1), 100); },
   echo() { this.tone(200, 0.4, 'sawtooth', 0.08); setTimeout(() => this.tone(180, 0.4, 'sawtooth', 0.06), 200); },
-  whisper() { this.tone(300, 1.5, 'sine', 0.04); },
   hit() { this.tone(150, 0.2, 'square', 0.15); },
-  music(scene) {
-    const themes = { start: 80, corridor: 60, basement: 50, run: 100 };
-    this.tone(themes[scene] || 70, 2.5, 'sine', 0.03);
-  },
+  victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); }
 };
-function toggleSound() { soundOn = !soundOn; document.getElementById('sound-state').textContent = soundOn ? 'ВКЛ' : 'ВЫКЛ'; }
-function cycleTypeSpeed() { typeSpeed = typeSpeed === 25 ? 50 : typeSpeed === 50 ? 10 : 25; document.getElementById('type-speed').textContent = typeSpeed; }
-function cycleFontSize() { fontSize = fontSize === 18 ? 22 : fontSize === 22 ? 14 : 18; textBox.style.fontSize = fontSize + 'px'; document.getElementById('font-size').textContent = fontSize; }
+function toggleSound() { soundOn = !soundOn; notify(soundOn ? 'Звук ВКЛ' : 'Звук ВЫКЛ'); renderMenu('settings'); }
+function cycleTypeSpeed() { typeSpeed = typeSpeed === 25 ? 50 : typeSpeed === 50 ? 10 : 25; notify('Скорость: ' + typeSpeed + 'мс'); renderMenu('settings'); }
+function cycleFontSize() { fontSize = fontSize === 18 ? 22 : fontSize === 22 ? 14 : 18; textBox.style.fontSize = fontSize + 'px'; notify('Шрифт: ' + fontSize + 'px'); renderMenu('settings'); }
 
-// ========== КРОВЬ ==========
+// ========== КРОВЬ И ЭФФЕКТЫ ==========
 const gore = {
   particles: [], puddles: [], footprints: [],
   spawn(x, y, count=20) {
     for (let i=0;i<count;i++) this.particles.push({
-      x, y, vx:(Math.random()-0.5)*8, vy:(Math.random()-0.5)*8-2,
-      life:60+Math.random()*40, size:2+Math.random()*4
+      x, y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10-2,
+      life:60+Math.random()*40, size:2+Math.random()*5
     });
   },
-  addPuddle(x, y, r=40) { this.puddles.push({x, y, r, alpha:0.6}); },
-  addFootprint(x, y) { this.footprints.push({x, y, alpha:0.5}); },
+  addPuddle(x, y, r=40) { this.puddles.push({x, y, r, alpha:0.7}); },
+  addFootprint(x, y) { this.footprints.push({x, y, alpha:0.6}); },
+  clear() { this.particles = []; this.puddles = []; this.footprints = []; },
   update() {
-    this.particles = this.particles.filter(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.3; p.life--; return p.life>0; });
-    this.footprints.forEach(f => { f.alpha -= 0.001; });
+    this.particles = this.particles.filter(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.4; p.life--; return p.life>0; });
+    this.footprints.forEach(f => { f.alpha -= 0.002; });
     this.footprints = this.footprints.filter(f => f.alpha > 0);
   },
   draw() {
-    this.puddles.forEach(p => { ctx.fillStyle = `rgba(80,0,0,${p.alpha})`; ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r*0.4, 0, 0, Math.PI*2); ctx.fill(); });
-    this.footprints.forEach(f => { ctx.fillStyle = `rgba(100,0,0,${f.alpha})`; ctx.beginPath(); ctx.ellipse(f.x, f.y, 8, 4, 0, 0, Math.PI*2); ctx.fill(); });
-    this.particles.forEach(p => { ctx.fillStyle = `rgba(150,0,0,${Math.min(1, p.life/60)})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
+    this.puddles.forEach(p => { ctx.fillStyle = `rgba(120,0,0,${p.alpha})`; ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r*0.3, 0, 0, Math.PI*2); ctx.fill(); });
+    this.footprints.forEach(f => { ctx.fillStyle = `rgba(150,0,0,${f.alpha})`; ctx.beginPath(); ctx.ellipse(f.x, f.y, 10, 5, 0, 0, Math.PI*2); ctx.fill(); });
+    this.particles.forEach(p => { ctx.fillStyle = `rgba(200,0,0,${Math.min(1, p.life/60)})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
   }
 };
 
-// ========== РАССУДОК + СТРАХ ==========
+const flash = {
+  trigger(color='#fff') { const f = document.getElementById('flash'); f.style.background = color; f.classList.add('active'); setTimeout(() => f.classList.remove('active'), 100); }
+};
+
+// ========== РАССУДОК ==========
 const sanity = {
   value: 100,
   set(v) {
@@ -260,17 +253,18 @@ const sanity = {
     if (this.value < 40) {
       g.classList.add('active');
       document.body.style.filter = `hue-rotate(${(40-this.value)*3}deg)`;
-      if (this.value < 20) { audio.echo(); audio.whisper(); }
+      if (this.value < 20 && Math.random() < 0.1) { audio.echo(); }
     } else { g.classList.remove('active'); document.body.style.filter = ''; }
     s.classList.toggle('active', this.value < 30);
-    if (this.value < 25) {
-      if (textBox.textContent.length > 0 && Math.random() < 0.3) {
-        textBox.textContent = textBox.textContent.replace(/[а-я]/gi, c => Math.random() < 0.1 ? '█' : c);
-      }
-    }
   },
   decrease(n) { this.set(this.value - n); },
   increase(n) { this.set(this.value + n); },
+};
+
+// ========== КАРМА ==========
+const karma = {
+  value: 0,
+  add(n) { this.value += n; document.getElementById('karma').textContent = this.value; }
 };
 
 // ========== БАТАРЕЯ ==========
@@ -280,45 +274,32 @@ const batterySystem = {
     state.battery = Math.max(0, state.battery - 0.05);
     document.getElementById('battery').textContent = Math.floor(state.battery);
     if (state.battery <= 0) { state.flashlightOn = false; notify('Фонарик сел'); }
-  },
-  charge(n) { state.battery = Math.min(100, state.battery + n); document.getElementById('battery').textContent = Math.floor(state.battery); }
+  }
 };
 function useFlashlight() { state.flashlightOn = !state.flashlightOn; notify(state.flashlightOn ? 'Фонарик ВКЛ' : 'Фонарик ВЫКЛ'); }
-
-// ========== ДИНАМИЧЕСКОЕ ОСВЕЩЕНИЕ ==========
-function drawDarkness() {
-  dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
-  const darknessLevel = state.flashlightOn ? 0.4 : 0.85;
-  dctx.fillStyle = `rgba(0,0,0,${darknessLevel})`;
-  dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
-  if (state.flashlightOn) {
-    const cx = darkCanvas.width / 2, cy = darkCanvas.height / 2;
-    const grad = dctx.createRadialGradient(cx, cy, 50, cx, cy, 300);
-    grad.addColorStop(0, 'rgba(0,0,0,0)');
-    grad.addColorStop(1, 'rgba(0,0,0,0.85)');
-    dctx.fillStyle = grad;
-    dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
-  }
-}
 
 // ========== КРОВЬ НА ЭКРАНЕ ==========
 function updateBloodOverlay() {
   const b = document.getElementById('blood-overlay');
   if (state.hp < 40) {
     b.classList.add('active');
-    b.style.background = `radial-gradient(circle, transparent 30%, rgba(100,0,0,${(40-state.hp)/100}) 100%)`;
+    b.style.background = `radial-gradient(circle, transparent 20%, rgba(120,0,0,${(40-state.hp)/80}) 100%)`;
   } else b.classList.remove('active');
 }
 
 // ========== ИНВЕНТАРЬ ==========
 const inventory = {
   items: [],
-  add(item) { if(!this.items.includes(item)){ this.items.push(item); this.render(); notify('Получено: ' + item); audio.pickup(); } },
+  add(item) { 
+    if(!this.items.includes(item)){ 
+      this.items.push(item); this.render(); notify('🎒 Получено: ' + item); audio.pickup(); 
+    } 
+  },
   has(item) { return this.items.includes(item); },
   remove(item) { this.items = this.items.filter(i=>i!==item); this.render(); },
-  render() { document.getElementById('inv').textContent = this.items.length ? this.items.join(', ') : '—'; },
+  render() { document.getElementById('inv-count').textContent = this.items.length; },
   craft(a, b, result) {
-    if (this.has(a) && this.has(b)) { this.remove(a); this.remove(b); this.add(result); notify('Создано: ' + result); return true; }
+    if (this.has(a) && this.has(b)) { this.remove(a); this.remove(b); this.add(result); return true; }
     return false;
   }
 };
@@ -332,7 +313,7 @@ function useWeapon() {
   if (enemy.active) { enemy.stop(); notify('Враг отступил!'); }
 }
 
-// ========== ВРАГ ==========
+// ========== ВРАГИ ==========
 let enemyMultiplier = 1;
 const enemy = {
   active: false, timer: 0,
@@ -342,7 +323,7 @@ const enemy = {
     if (!this.active) return;
     this.timer -= dt;
     if (this.timer <= 0) { this.active=false; this.onCatch(); }
-    else if (this.timer < 10) audio.heartbeat();
+    else if (this.timer < 10 && Math.random() < 0.05) audio.heartbeat();
   },
   onCatch() {
     flash.trigger('#ff0000'); audio.scream();
@@ -353,7 +334,35 @@ const enemy = {
   }
 };
 
-// ========== ЭХО ==========
+const shadow = {
+  active: false, x: 0, timer: 0,
+  start() { this.active = true; this.x = -100; this.timer = 0; },
+  stop() { this.active = false; },
+  update(dt) {
+    if (!this.active) return;
+    this.x += 200 * dt; this.timer += dt;
+    if (this.timer > 6) { this.stop(); }
+  },
+  draw() { 
+    if (!this.active) return; 
+    ctx.fillStyle = 'rgba(0,0,0,0.9)'; 
+    ctx.beginPath(); ctx.ellipse(this.x, canvas.height*0.6, 80, 150, 0, 0, Math.PI*2); ctx.fill(); 
+  }
+};
+
+const doll = {
+  active: false, revealed: false,
+  start() { this.active = true; this.revealed = false; },
+  stop() { this.active = false; },
+  update() {
+    if (!this.active) return;
+    if (Math.random() < 0.002 && !this.revealed) {
+      this.revealed = true; audio.scream(); sanity.decrease(15);
+      notify('Кукла смотрит на тебя'); gore.spawn(canvas.width/2, canvas.height/2, 20);
+    }
+  }
+};
+
 const echo = {
   active: false, timer: null,
   messages: ['ты не должен был это видеть','я — это ты','обернись','я уже внутри','не отвечай'],
@@ -364,34 +373,6 @@ const echo = {
     const msg = this.messages[Math.floor(Math.random()*this.messages.length)];
     notify('ЭХО: ' + msg); audio.echo(); sanity.decrease(5);
     this.timer = setTimeout(() => this.tick(), 8000 + Math.random()*7000);
-  }
-};
-
-// ========== ТЕНЬ ==========
-const shadow = {
-  active: false, x: 0, y: 0, timer: 0,
-  start() { this.active = true; this.x = 0; this.y = canvas.height/2; this.timer = 0; },
-  stop() { this.active = false; },
-  update(dt) {
-    if (!this.active) return;
-    this.x += 200 * dt; this.timer += dt;
-    if (this.timer > 5) { this.stop(); sanity.decrease(10); notify('Тень исчезла... пока что'); }
-    if (this.x > canvas.width) this.stop();
-  },
-  draw() { if (!this.active) return; ctx.fillStyle = 'rgba(0,0,0,0.8)'; ctx.beginPath(); ctx.ellipse(this.x, this.y, 40, 80, 0, 0, Math.PI*2); ctx.fill(); }
-};
-
-// ========== КУКЛА ==========
-const doll = {
-  active: false, revealed: false,
-  start() { this.active = true; this.revealed = false; },
-  stop() { this.active = false; },
-  update() {
-    if (!this.active) return;
-    if (Math.random() < 0.001 && !this.revealed) {
-      this.revealed = true; audio.scream(); sanity.decrease(15);
-      notify('Кукла смотрит на тебя'); gore.spawn(canvas.width/2, canvas.height/2, 10);
-    }
   }
 };
 
@@ -407,19 +388,10 @@ const typewriter = {
   }
 };
 
-// ========== ВСПЫШКИ ==========
-const flash = {
-  trigger(color='#fff') { const f = document.getElementById('flash'); f.style.background = color; f.classList.add('active'); setTimeout(() => f.classList.remove('active'), 100); }
-};
-
 // ========== ДНЕВНИК ==========
 const journal = {
   notes: [],
-  add(title, text) { if(!this.notes.find(n=>n.title===title)){ this.notes.push({title, text}); notify('Записка: ' + title); } },
-  render() {
-    const c = document.getElementById('journal-content');
-    c.innerHTML = this.notes.length ? this.notes.map(n => `<b style="color:#c33">${n.title}</b><br>${n.text}<br><br>`).join('') : 'Пусто. Ищи записки.';
-  }
+  add(title, text) { if(!this.notes.find(n=>n.title===title)){ this.notes.push({title, text}); notify('📜 ' + title); } }
 };
 
 // ========== ДОСТИЖЕНИЯ ==========
@@ -431,23 +403,20 @@ const achievements = {
     'journalist': 'Собиратель записок', 'night_owl': 'Ночной житель',
     'fighter': 'Боец', 'hidden': 'Нашёл секрет', 'weapon_master': 'Мастер оружия',
     'survivor': 'Выживший', 'ghost': 'Призрак', 'shadow_walker': 'Идущий в тени',
+    'endless_10': 'Кошмар 10 волн', 'good_karma': 'Святой', 'bad_karma': 'Грешник'
   },
-  unlock(id) { if (!this.unlocked.includes(id) && this.defs[id]) { this.unlocked.push(id); notify('🏆 ' + this.defs[id]); audio.pickup(); } },
-  render() {
-    const c = document.getElementById('ach-content');
-    c.innerHTML = Object.entries(this.defs).map(([id, name]) => `${this.unlocked.includes(id) ? '✅' : '⬜'} ${name}`).join('<br>');
-  }
+  unlock(id) { if (!this.unlocked.includes(id) && this.defs[id]) { this.unlocked.push(id); notify('🏆 ' + this.defs[id]); audio.pickup(); } }
 };
 
-// ========== СТАТИСТИКА ==========
 const stats = { deaths: 0, endings: [], playtime: 0,
   render() {
-    const a = document.getElementById('achievements');
-    a.innerHTML = `Смертей: ${this.deaths}<br>Концовок: ${this.endings.length}/4<br>Время: ${Math.floor(this.playtime)}с`;
+    const a = document.getElementById('achievements-hud');
+    a.innerHTML = `💀 Смертей: ${this.deaths}<br>🏁 Концовок: ${this.endings.length}/4<br>⏱️ Время: ${Math.floor(this.playtime)}с`;
   }
 };
 setInterval(() => {
   stats.playtime++; stats.render();
+  if (state.testMode) { state.testTime++; }
   if (stats.playtime >= 300) achievements.unlock('night_owl');
   if (journal.notes.length >= 5) achievements.unlock('journalist');
 }, 1000);
@@ -470,24 +439,16 @@ const minigame = {
       if (input === code) { audio.unlock(); clearChoices(); callback(true); }
       else { sanity.decrease(10); clearChoices(); callback(false); }
     }}]);
-  },
-  wires(callback) {
-    const colors = ['красный','синий','зелёный','жёлтый'];
-    const correct = colors[Math.floor(Math.random()*4)];
-    showChoices(colors.map(c => ({ label: c, action: () => {
-      if (c === correct) { audio.unlock(); clearChoices(); callback(true); }
-      else { audio.hit(); sanity.decrease(10); clearChoices(); callback(false); }
-    }})));
   }
 };
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_save_v4',
+  key: 'bloodhorror_final_v6',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, difficulty: state.difficulty,
-      weaponDurability: state.weaponDurability,
+      weaponDurability: state.weaponDurability, karma: karma.value, endlessScore: state.endlessScore,
       sanity: sanity.value, inv: inventory.items,
       stats: { deaths: stats.deaths, endings: stats.endings, playtime: stats.playtime },
       sound: soundOn, typeSpeed, fontSize,
@@ -497,11 +458,13 @@ const save = {
   load() { const d = localStorage.getItem(this.key); return d ? JSON.parse(d) : null; },
   clear() { localStorage.removeItem(this.key); }
 };
-function saveGame() { save.save(); notify('Игра сохранена'); }
-function loadGame() { const d = save.load(); if (d) { loadState(d); closeMenus(); notify('Игра загружена'); } else notify('Сохранение не найдено'); }
+function saveGame() { save.save(); notify('💾 Игра сохранена'); }
+function loadGame() { const d = save.load(); if (d) { loadState(d); closeMenu(); notify('Загружено'); } else notify('Нет сохранения'); }
 function loadState(d) {
   state.scene = d.scene || 'start'; state.hp = d.hp || 100; state.battery = d.battery ?? 100;
   state.difficulty = d.difficulty || 'normal'; state.weaponDurability = d.weaponDurability ?? 3;
+  state.endlessScore = d.endlessScore || 0;
+  karma.value = d.karma || 0; document.getElementById('karma').textContent = karma.value;
   sanity.set(d.sanity ?? 100); inventory.items = d.inv || []; inventory.render();
   if (d.stats) { stats.deaths = d.stats.deaths || 0; stats.endings = d.stats.endings || []; stats.playtime = d.stats.playtime || 0; }
   soundOn = d.sound ?? true; typeSpeed = d.typeSpeed ?? 25; fontSize = d.fontSize ?? 18;
@@ -509,245 +472,392 @@ function loadState(d) {
   if (d.records) records.list = d.records;
   document.getElementById('hp').textContent = state.hp;
   document.getElementById('battery').textContent = Math.floor(state.battery);
-  document.getElementById('sound-state').textContent = soundOn ? 'ВКЛ' : 'ВЫКЛ';
-  document.getElementById('type-speed').textContent = typeSpeed;
-  document.getElementById('font-size').textContent = fontSize;
   textBox.style.fontSize = fontSize + 'px';
   updateEnemyMultiplier();
   if (scenes[state.scene]) goTo(state.scene);
 }
 function newGame() { save.clear(); location.reload(); }
-function exportSave() {
-  const d = save.load(); if (!d) { notify('Нет сохранения'); return; }
-  const blob = new Blob([JSON.stringify(d)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'bloodhorror_save.json'; a.click();
-  notify('Сохранение экспортировано');
-}
-function importSave() {
-  const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
-  input.onchange = e => { const file = e.target.files[0]; const reader = new FileReader();
-    reader.onload = ev => { try { const d = JSON.parse(ev.target.result); localStorage.setItem(save.key, JSON.stringify(d)); notify('Сохранение импортировано'); setTimeout(()=>location.reload(), 1000); } catch { notify('Ошибка импорта'); } };
-    reader.readAsText(file); };
-  input.click();
-}
 
-// ========== РЕКОРДЫ ==========
+// ========== РЕКОРДЫ / СЛОЖНОСТЬ ==========
 const records = {
   list: [],
-  add(time, endings) { this.list.push({ time: Math.floor(time), endings }); this.list.sort((a,b) => a.time - b.time); this.list = this.list.slice(0, 10); },
-  render() { return this.list.length ? this.list.map((r,i) => `${i+1}. ${r.time}с (${r.endings} конц.)`).join('<br>') : 'Нет рекордов'; }
+  add(time, endings) { this.list.push({ time: Math.floor(time), endings }); this.list.sort((a,b) => a.time - b.time); this.list = this.list.slice(0, 10); }
 };
-
-// ========== СЛОЖНОСТЬ ==========
 function updateEnemyMultiplier() {
-  enemyMultiplier = state.difficulty === 'easy' ? 0.6 : state.difficulty === 'hard' ? 1.6 : 1;
+  enemyMultiplier = state.difficulty === 'easy' ? 0.6 : state.difficulty === 'hard' ? 1.8 : 1;
 }
-function setDifficulty(d) { state.difficulty = d; updateEnemyMultiplier(); closeMenus(); notify('Сложность: ' + d); save.save(); }
 
-// ========== МЕНЮ ==========
-function togglePause() { state.paused = !state.paused; document.getElementById('pause-menu').classList.toggle('active', state.paused); }
-function openSettings() { closeMenus(); document.getElementById('settings-menu').classList.add('active'); }
-function openJournal() { journal.render(); closeMenus(); document.getElementById('journal-menu').classList.add('active'); }
-function openAchievements() { achievements.render(); closeMenus(); document.getElementById('achievements-menu').classList.add('active'); }
-function openCraft() {
-  document.getElementById('craft-content').innerHTML = 'бинт + таблетки = аптечка<br>отмычка + ключ = универсальный ключ<br>нож + камень = заточенный нож';
-  closeMenus(); document.getElementById('craft-menu').classList.add('active');
+// ========== УНИВЕРСАЛЬНОЕ МЕНЮ ==========
+function toggleMenu() {
+  state.paused = !state.paused;
+  if (state.paused) renderMenu('main');
+  else closeMenu();
 }
-function openDifficulty() { closeMenus(); document.getElementById('difficulty-menu').classList.add('active'); }
-function openRecords() { document.getElementById('records-content').innerHTML = records.render(); closeMenus(); document.getElementById('records-menu').classList.add('active'); }
-function closeMenus() {
-  ['pause-menu','settings-menu','journal-menu','achievements-menu','craft-menu','difficulty-menu','records-menu'].forEach(id => document.getElementById(id).classList.remove('active'));
+function closeMenu() {
+  document.getElementById('menu-overlay').classList.remove('active');
   state.paused = false;
 }
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { if (document.querySelector('.active')) closeMenus(); else togglePause(); } });
+function renderMenu(type) {
+  const overlay = document.getElementById('menu-overlay');
+  const title = document.getElementById('menu-title');
+  const content = document.getElementById('menu-content');
+  overlay.classList.add('active');
+  content.innerHTML = '';
 
-// ========== СЦЕНЫ ==========
+  if (type === 'main') {
+    title.textContent = 'ПАУЗА';
+    content.innerHTML = `
+      <button onclick="closeMenu()">Продолжить</button>
+      <button onclick="saveGame()">Сохранить</button>
+      <button onclick="loadGame()">Загрузить</button>
+      <button onclick="renderMenu('inventory')">Инвентарь</button>
+      <button onclick="renderMenu('journal')">Дневник</button>
+      <button onclick="renderMenu('achievements')">Достижения</button>
+      <button onclick="renderMenu('settings')">Настройки</button>
+      <button onclick="renderMenu('records')">Рекорды</button>
+      <button onclick="renderMenu('difficulty')">Сложность</button>
+      <button onclick="newGame()" style="color:#f44; margin-top:20px;">Начать заново</button>
+    `;
+  } 
+  else if (type === 'inventory') {
+    title.textContent = 'ИНВЕНТАРЬ';
+    const grid = document.createElement('div');
+    grid.id = 'inventory-grid';
+    inventory.items.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'inv-item';
+      div.textContent = item;
+      div.onclick = () => { useItem(item); renderMenu('inventory'); };
+      grid.appendChild(div);
+    });
+    if(inventory.items.length === 0) grid.innerHTML = '<p style="color:#666;">Пусто</p>';
+    content.appendChild(grid);
+    content.innerHTML += `<div class="inv-actions"><button onclick="renderMenu('craft')">Крафт</button></div>`;
+  }
+  else if (type === 'craft') {
+    title.textContent = 'КРАФТ';
+    content.innerHTML = `
+      <div style="text-align:left; color:#aaa; margin-bottom:20px;">
+        <p>Бинт + Таблетки = Аптечка</p>
+        <p>Отмычка + Ключ = Универсальный ключ</p>
+        <p>Нож + Камень = Заточенный нож</p>
+      </div>
+      <button onclick="if(inventory.craft('бинт','таблетки','аптечка')){achievements.unlock('crafter'); renderMenu('inventory');} else notify('Нет предметов')">Создать аптечку</button>
+    `;
+  }
+  else if (type === 'settings') {
+    title.textContent = 'НАСТРОЙКИ';
+    content.innerHTML = `
+      <button onclick="toggleSound()">Звук: ${soundOn ? 'ВКЛ' : 'ВЫКЛ'}</button>
+      <button onclick="cycleTypeSpeed()">Скорость текста: ${typeSpeed}мс</button>
+      <button onclick="cycleFontSize()">Размер шрифта: ${fontSize}px</button>
+    `;
+  }
+  else if (type === 'difficulty') {
+    title.textContent = 'СЛОЖНОСТЬ';
+    content.innerHTML = `
+      <button onclick="state.difficulty='easy'; updateEnemyMultiplier(); notify('Лёгкая'); renderMenu('main')">Лёгкая</button>
+      <button onclick="state.difficulty='normal'; updateEnemyMultiplier(); notify('Нормальная'); renderMenu('main')">Нормальная</button>
+      <button onclick="state.difficulty='hard'; updateEnemyMultiplier(); notify('Хардкор'); renderMenu('main')">Хардкор</button>
+    `;
+  }
+  else if (type === 'journal') {
+    title.textContent = 'ДНЕВНИК';
+    let html = '';
+    journal.notes.forEach(n => { html += `<div class="journal-item"><b>${n.title}</b><br>${n.text}</div>`; });
+    if(!html) html = '<p style="color:#666;">Записок пока нет.</p>';
+    content.innerHTML = `<div id="journal-list">${html}</div>`;
+  }
+  else if (type === 'achievements') {
+    title.textContent = 'ДОСТИЖЕНИЯ';
+    let html = '';
+    for (let id in achievements.defs) {
+      const unlocked = achievements.unlocked.includes(id);
+      html += `<div class="ach-item ${unlocked?'unlocked':''}">${unlocked?'✅':'⬜'} ${achievements.defs[id]}</div>`;
+    }
+    content.innerHTML = `<div id="ach-list">${html}</div>`;
+  }
+  else if (type === 'records') {
+    title.textContent = 'РЕКОРДЫ';
+    let html = records.list.length ? records.list.map((r,i) => `<p>${i+1}. ${r.time}с (${r.endings} конц.)</p>`).join('') : '<p style="color:#666;">Нет рекордов</p>';
+    if (state.endlessScore > 0) html += `<br><p>Бесконечный режим: ${state.endlessScore} волн</p>`;
+    content.innerHTML = `<div id="records-list">${html}</div>`;
+  }
+}
+
+// Использование предметов
+function useItem(item) {
+  if (item === 'аптечка') { state.hp = Math.min(100, state.hp + 40); document.getElementById('hp').textContent = state.hp; inventory.remove('аптечка'); notify('Вылечено 40 HP'); }
+  if (item === 'таблетки') { sanity.increase(30); inventory.remove('таблетки'); notify('Рассудок +30'); }
+  if (item === 'бинт') { state.hp = Math.min(100, state.hp + 15); document.getElementById('hp').textContent = state.hp; inventory.remove('бинт'); notify('Вылечено 15 HP'); }
+}
+
+// ========== СЦЕНЫ И РЕНДЕР ==========
 function showText(t) { typewriter.write(t); }
 function showChoices(list) { choicesBox.innerHTML = ''; list.forEach(c => { const b = document.createElement('button'); b.className = 'choice-btn'; b.textContent = c.label; b.onclick = c.action; choicesBox.appendChild(b); }); }
 function clearChoices() { choicesBox.innerHTML = ''; }
-function bg(color) { ctx.fillStyle = color; ctx.fillRect(0,0,canvas.width,canvas.height); }
 
+// --- ДИНАМИЧЕСКАЯ ГРАФИКА С МАСКОЙ ТЬМЫ ---
+function renderBackground(sceneId) {
+  if (drawInterval) clearInterval(drawInterval);
+  
+  const colors = {
+    start: '#151515', look_around: '#151515', corner: '#2a0a0a', door: '#101520',
+    corridor: '#0a0a10', basement: '#100000', attic: '#151005', morgue: '#050a0a',
+    bathroom: '#0a1515', run: '#0a0a0a', boss: '#1a0005', default: '#111',
+    endless: '#200000'
+  };
+  const bgCol = colors[sceneId] || colors.default;
+
+  const drawFrame = () => {
+    ctx.fillStyle = bgCol;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Комната (пол, стены, дверь)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(canvas.width * 0.1, canvas.height * 0.7);
+    ctx.lineTo(canvas.width * 0.9, canvas.height * 0.7);
+    ctx.lineTo(canvas.width, canvas.height);
+    ctx.lineTo(0, canvas.height);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fill(); ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(canvas.width * 0.1, canvas.height * 0.7);
+    ctx.lineTo(canvas.width * 0.3, canvas.height * 0.3);
+    ctx.lineTo(canvas.width * 0.7, canvas.height * 0.3);
+    ctx.lineTo(canvas.width * 0.9, canvas.height * 0.7);
+    ctx.stroke();
+
+    // Дверь
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    ctx.fillRect(canvas.width * 0.42, canvas.height * 0.4, canvas.width * 0.16, canvas.height * 0.3);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.strokeRect(canvas.width * 0.42, canvas.height * 0.4, canvas.width * 0.16, canvas.height * 0.3);
+
+    gore.draw();
+    shadow.draw();
+
+    // МАСКА ТЬМЫ
+    dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
+    dctx.fillStyle = 'rgba(0,0,0,0.95)';
+    dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
+    
+    if (state.flashlightOn) {
+      const cx = darkCanvas.width / 2, cy = darkCanvas.height / 2;
+      const grad = dctx.createRadialGradient(cx, cy, 80, cx, cy, Math.max(canvas.width, canvas.height) * 0.5);
+      grad.addColorStop(0, 'rgba(0,0,0,0)');
+      grad.addColorStop(1, 'rgba(0,0,0,1)');
+      dctx.globalCompositeOperation = 'destination-out';
+      dctx.fillStyle = grad;
+      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
+      dctx.globalCompositeOperation = 'source-over';
+    } else if (sceneId === 'start' || sceneId === 'safe') {
+      // В безопасной зоне чуть светлее
+      dctx.fillStyle = 'rgba(0,0,0,0.5)';
+      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
+    }
+  };
+
+  drawFrame();
+  drawInterval = setInterval(drawFrame, 33);
+}
+
+// ========== СЦЕНАРИЙ ==========
 const scenes = {
   start: () => {
-    bg('#0a0a0a'); audio.music('start');
+    gore.clear(); renderBackground('start');
     showText('Ты просыпаешься в тёмной комнате. Пахнет кровью и сыростью. Где-то капает вода.');
     showChoices([
       { label: 'Осмотреться', action: () => goTo('look_around') },
-      { label: 'Попробовать открыть дверь', action: () => goTo('door') },
-      { label: 'Меню', action: togglePause },
+      { label: 'Открыть дверь', action: () => goTo('door') },
+      { label: 'Бесконечный кошмар (Хардкор)', action: () => { state.endlessMode = true; goTo('endless'); } },
     ]);
     audio.drip();
   },
   look_around: () => {
-    bg('#120808');
+    renderBackground('look_around');
+    gore.addPuddle(canvas.width * 0.3, canvas.height * 0.8, 60);
     showText('На полу — бурые пятна. В углу что-то шевелится. Ты не хочешь знать, что это.');
     journal.add('Записка 1', '«Не выходи из комнаты. Оно ждёт у двери.»');
-    showChoices([{ label: 'Подойти ближе', action: () => goTo('corner') }, { label: 'Отступить к двери', action: () => goTo('door') }]);
-    audio.drip();
+    showChoices([{ label: 'Подойти ближе', action: () => goTo('corner') }, { label: 'Отступить', action: () => goTo('door') }]);
   },
   corner: () => {
-    bg('#1a0000'); gore.addPuddle(canvas.width/2, canvas.height/2, 80); gore.spawn(canvas.width/2, canvas.height/2, 30);
-    showText('Это тело. Оно ещё тёплое. Кровь медленно растекается под твоими ногами.');
-    showChoices([{ label: 'Обыскать', action: () => { inventory.add('ключ'); goTo('loot'); } }, { label: 'Уйти', action: () => { sanity.decrease(10); goTo('door'); } }]);
+    renderBackground('corner');
+    gore.addPuddle(canvas.width * 0.5, canvas.height * 0.7, 120);
+    gore.spawn(canvas.width * 0.5, canvas.height * 0.6, 40);
+    showText('Это тело. Оно ещё тёплое. Кровь растекается под ногами.');
+    showChoices([
+      { label: 'Обыскать', action: () => { inventory.add('ключ'); goTo('door'); } }, 
+      { label: 'Уйти', action: () => { sanity.decrease(10); goTo('door'); } }
+    ]);
     audio.scream();
   },
-  loot: () => {
-    bg('#150000');
-    showText('В кармане — ржавый ключ. Ты берёшь его. Пальцы в крови.');
-    showChoices([{ label: 'К двери', action: () => goTo('door') }]);
-  },
   door: () => {
-    bg('#0d0d12'); audio.music('corridor');
+    renderBackground('door');
     showText('Дверь заперта. За ней — шаги. Кто-то идёт.');
     showChoices([
-      { label: 'Спрятаться', action: () => goTo('hide') },
-      { label: 'Открыть дверь ключом', action: () => { if (inventory.has('ключ')) goTo('open_door'); else { showText('Заперто. Нужен ключ.'); setTimeout(() => goTo('door'), 1500); } }},
-      { label: 'Взломать отмычкой', action: () => { if (inventory.has('отмычка')) minigame.lockpick(ok => goTo(ok ? 'open_door' : 'door')); else { showText('Нужна отмычка.'); setTimeout(() => goTo('door'), 1500); } }},
-      { label: 'Открыть сейф (код)', action: () => minigame.safeCode(ok => goTo(ok ? 'safe_room' : 'door')) },
+      { label: 'Спрятаться', action: () => { enemy.start(10); goTo('hide'); } },
+      { label: 'Открыть ключом', action: () => { if (inventory.has('ключ')) goTo('corridor'); else { notify('Нужен ключ'); } }},
+      { label: 'Взломать отмычкой', action: () => { if (inventory.has('отмычка')) minigame.lockpick(ok => goTo(ok ? 'corridor' : 'door')); else notify('Нужна отмычка'); }},
+      { label: 'Сейф (код)', action: () => minigame.safeCode(ok => goTo(ok ? 'secret_room' : 'door')) },
     ]);
     audio.creak();
   },
-  safe_room: () => {
-    bg('#0a0a12');
-    showText('Сейф открыт. Внутри — нож и странная записка.');
-    inventory.add('нож');
-    journal.add('Записка 6', '«Нож не поможет против Эха. Но поможет против тебя.»');
-    showChoices([{ label: 'Выйти', action: () => goTo('door') }]);
-  },
   hide: () => {
-    bg('#050505'); hiding = true;
-    showText('Ты прячешься в тени. Шаги приближаются. Сердце колотится.');
-    enemy.start(15);
-    showChoices([{ label: 'Ждать', action: () => { enemy.stop(); hiding = false; goTo('safe'); } }]);
+    renderBackground('start');
+    showText('Ты прячешься в тени. Шаги приближаются...');
+    showChoices([{ label: 'Ждать', action: () => { enemy.stop(); goTo('safe'); } }]);
   },
   safe: () => {
-    bg('#0a0a0a'); hiding = false;
-    showText('Шаги стихли. Ты жив. Пока что.');
+    renderBackground('start');
+    showText('Шаги стихли. Ты жив. Пока что. Здесь можно перевести дух.');
     showChoices([
-      { label: 'Идти к двери', action: () => goTo('door') },
-      { label: 'Осмотреть коридор', action: () => goTo('corridor') },
-      { label: 'Осмотреть чердак', action: () => goTo('attic') },
-      { label: 'Отдохнуть (восстановить рассудок)', action: () => { sanity.increase(15); notify('Рассудок восстановлен'); goTo('safe'); } },
+      { label: 'В коридор', action: () => goTo('corridor') },
+      { label: 'На чердак', action: () => goTo('attic') },
+      { label: 'В морг', action: () => goTo('morgue') },
+      { label: 'Отдохнуть (Рассудок +15)', action: () => { sanity.increase(15); notify('Рассудок восстановлен'); goTo('safe'); } },
     ]);
   },
   corridor: () => {
-    bg('#080810'); audio.music('corridor');
-    gore.addFootprint(canvas.width/2 - 40, canvas.height/2); gore.addFootprint(canvas.width/2 + 40, canvas.height/2 + 20);
-    showText('Коридор уходит в темноту. На стенах — кровавые отпечатки рук. Где-то плачет ребёнок.');
+    renderBackground('corridor');
+    gore.addFootprint(canvas.width * 0.4, canvas.height * 0.8);
+    gore.addFootprint(canvas.width * 0.6, canvas.height * 0.85);
+    showText('Коридор уходит в темноту. На стенах — кровавые отпечатки. Плачет ребёнок.');
     shadow.start();
     journal.add('Записка 2', '«Оно копирует нас. Не верь тому, кто говорит твоим голосом.»');
-    showChoices([{ label: 'Идти на звук', action: () => { sanity.decrease(15); goTo('basement'); } }, { label: 'Вернуться', action: () => goTo('safe') }]);
+    showChoices([
+      { label: 'Идти на звук (в подвал)', action: () => { sanity.decrease(15); goTo('basement'); } }, 
+      { label: 'Встретить выжившего', action: () => goTo('npc') },
+      { label: 'Вернуться', action: () => goTo('safe') }
+    ]);
     audio.drip();
   },
+  npc: () => {
+    renderBackground('corridor');
+    showText('Из тени выходит человек в окровавленном халате. "Помоги... У меня есть таблетки. Просто не оставляй меня здесь".');
+    showChoices([
+      { label: 'Помочь (Карма +1)', action: () => { karma.add(1); inventory.add('таблетки'); sanity.increase(10); goTo('safe'); } },
+      { label: 'Забрать силой (Карма -1)', action: () => { karma.add(-1); inventory.add('таблетки'); inventory.add('бинт'); sanity.decrease(10); goTo('safe'); } },
+      { label: 'Игнорировать', action: () => goTo('safe') }
+    ]);
+  },
   basement: () => {
-    bg('#0a0000'); audio.music('basement');
-    gore.addPuddle(canvas.width/2, canvas.height*0.7, 120);
-    showText('Подвал. На крюках — тела. Кровь стекает в сточную канаву. Кто-то дышит за твоей спиной.');
+    renderBackground('basement');
+    gore.addPuddle(canvas.width * 0.5, canvas.height * 0.85, 150);
+    showText('Подвал. На крюках — тела. Кровь стекает в канаву. Кто-то дышит за спиной.');
     inventory.add('бинт'); inventory.add('отмычка');
     journal.add('Записка 3', '«Подвал — не место для живых. Уходи, пока можешь.»');
     showChoices([
       { label: 'Взять таблетки', action: () => { inventory.add('таблетки'); goTo('safe'); } },
-      { label: 'Крафт: аптечка', action: () => { if (inventory.craft('бинт','таблетки','аптечка')) { achievements.unlock('crafter'); goTo('basement'); } else notify('Нужны бинт и таблетки'); }},
       { label: 'Бежать', action: () => { enemy.start(8); sanity.decrease(20); goTo('run'); } },
-      { label: 'Спуститься глубже', action: () => goTo('deep_basement') },
+      { label: 'Спуститься глубже (Босс)', action: () => { enemy.start(5); goTo('boss'); } },
     ]);
     audio.scream();
   },
-  deep_basement: () => {
-    bg('#050000');
-    showText('Глубже. Темнее. Стены покрыты плесенью. Здесь что-то есть.');
-    journal.add('Записка 7', '«Внизу — то, что осталось от нас. Не смотри ему в глаза.»');
-    showChoices([
-      { label: 'Идти дальше', action: () => { enemy.start(5); goTo('boss'); } },
-      { label: 'Назад', action: () => goTo('basement') },
-    ]);
-  },
   attic: () => {
-    bg('#0a0505'); doll.start();
+    renderBackground('attic');
+    doll.start();
     showText('Чердак. Пыль, старые вещи. В углу — кукла. Она сидит спиной. Ты чувствуешь её взгляд.');
     journal.add('Записка 4', '«Кукла не двигается. Если двигается — беги.»');
-    showChoices([{ label: 'Взять куклу', action: () => { inventory.add('кукла'); gore.spawn(canvas.width/2, canvas.height/2, 20); sanity.decrease(10); goTo('safe'); } }, { label: 'Уйти', action: () => { doll.stop(); goTo('safe'); } }]);
+    showChoices([
+      { label: 'Взять куклу', action: () => { inventory.add('кукла'); gore.spawn(canvas.width/2, canvas.height/2, 20); sanity.decrease(10); goTo('safe'); } }, 
+      { label: 'Уйти', action: () => { doll.stop(); goTo('safe'); } }
+    ]);
   },
   morgue: () => {
-    bg('#050508'); gore.addPuddle(canvas.width/2, canvas.height*0.6, 100);
+    renderBackground('morgue');
+    gore.addPuddle(canvas.width * 0.5, canvas.height * 0.7, 100);
     showText('Морг. Холод. На столах — накрытые тела. Одно из них дышит.');
     journal.add('Записка 5', '«Они не мертвы. Они ждут.»');
-    showChoices([{ label: 'Открыть простыню', action: () => { flash.trigger('#ff0000'); audio.scream(); sanity.decrease(25); goTo('caught'); } }, { label: 'Уйти', action: () => goTo('safe') }]);
-  },
-  bathroom: () => {
-    bg('#0a0a0a'); gore.addPuddle(canvas.width/2, canvas.height*0.8, 80);
-    showText('Ванная. Вода в ванне красная. На зеркале надпись кровью: «ОБЕРНИСЬ».');
-    showChoices([{ label: 'Обернуться', action: () => { echo.start(); sanity.decrease(20); goTo('safe'); } }, { label: 'Не оборачиваться', action: () => { sanity.decrease(10); goTo('safe'); } }]);
-    audio.creak();
-  },
-  roof: () => {
-    bg('#050515');
-    showText('Крыша. Ветер. Город внизу тонет в тумане. Здесь можно дышать.');
-    sanity.increase(10); notify('Свежий воздух');
-    showChoices([{ label: 'Спуститься', action: () => goTo('safe') }]);
+    showChoices([
+      { label: 'Открыть простыню', action: () => { flash.trigger('#ff0000'); audio.scream(); sanity.decrease(25); goTo('caught'); } }, 
+      { label: 'Уйти', action: () => goTo('safe') }
+    ]);
   },
   secret_room: () => {
-    bg('#0a0a00'); achievements.unlock('hidden');
-    showText('Секретная комната за картиной. Здесь спрятано что-то важное.');
-    inventory.add('универсальный ключ');
-    journal.add('Записка 8', '«Ты нашёл это место. Значит, ты готов.»');
+    renderBackground('start');
+    achievements.unlock('hidden');
+    showText('Секретная комната. Здесь спрятано что-то важное.');
+    inventory.add('универсальный ключ'); inventory.add('нож');
+    journal.add('Записка 6', '«Ты нашёл это место. Значит, ты готов.»');
     showChoices([{ label: 'Выйти', action: () => goTo('safe') }]);
   },
   boss: () => {
-    bg('#200000'); echo.start();
-    showText('Ты в финальной комнате. Перед тобой — твоя копия. Она улыбается. «Выбирай.»');
+    renderBackground('boss');
+    echo.start();
+    showText('Финальная комната. Перед тобой — твоя копия. Она улыбается. «Выбирай.»');
     showChoices([
       { label: 'Убить себя', action: () => { achievements.unlock('caught'); goTo('caught'); } },
       { label: 'Стать Эхом', action: () => { echo.stop(); goTo('ending_echo'); } },
       { label: 'Сбежать', action: () => { echo.stop(); goTo('ending_escape'); } },
-      { label: 'Спасти друга', action: () => { echo.stop(); goTo('ending_friend'); } },
+      { label: 'Спасти друга (Нужна хорошая карма)', action: () => { 
+          if (karma.value > 0) { echo.stop(); goTo('ending_friend'); } 
+          else notify('Ты слишком плохой человек для этого'); 
+      } },
     ]);
   },
-  open_door: () => {
-    bg('#1a0a0a');
-    showText('Дверь открывается. За ней — тьма. И чей-то силуэт.');
-    echo.start();
-    showChoices([{ label: 'Бежать', action: () => { echo.stop(); goTo('run'); } }, { label: 'Смотреть', action: () => { sanity.decrease(20); goTo('caught'); } }]);
-  },
   run: () => {
-    bg('#111'); audio.music('run');
+    renderBackground('run');
     showText('Ты бежишь. Дыхание сбивается. Позади — крик.');
     enemy.start(10);
     showChoices([{ label: 'Не оглядываться', action: () => { enemy.stop(); goTo('ending_escape'); } }]);
   },
+  endless: () => {
+    renderBackground('endless');
+    if (state.endlessWave > 10) { achievements.unlock('endless_10'); }
+    showText(`БЕСКОНЕЧНЫЙ КОШМАР\nВолна: ${state.endlessWave}\nОчки: ${state.endlessScore}\n\nВраги повсюду. Продержись как можно дольше.`);
+    enemy.start(10 - Math.min(8, state.endlessWave)); // Чем дальше, тем быстрее
+    showChoices([
+      { label: 'Сражаться (Нож)', action: () => { 
+          if (inventory.has('нож')) {
+            state.endlessScore += 10; state.endlessWave++; audio.hit(); enemy.stop(); goTo('endless');
+          } else { state.hp -= 30; notify('Нет ножа!'); if (state.hp <= 0) goTo('death'); else goTo('endless'); }
+      } },
+      { label: 'Бежать (Шанс 50%)', action: () => {
+          if (Math.random() > 0.5) { state.endlessScore += 5; state.endlessWave++; enemy.stop(); goTo('endless'); }
+          else { enemy.onCatch(); }
+      } },
+      { label: 'Выйти в меню', action: () => { state.endlessMode = false; goTo('start'); } }
+    ]);
+  },
   caught: () => {
-    bg('#300'); flash.trigger('#ff0000'); gore.spawn(canvas.width/2, canvas.height/2, 60);
+    renderBackground('corner');
+    flash.trigger('#ff0000'); gore.spawn(canvas.width/2, canvas.height/2, 100);
     showText('Оно хватает тебя. Кровь заливает глаза. Всё кончается.');
     if (!stats.endings.includes('caught')) stats.endings.push('caught');
     achievements.unlock('caught'); stats.render();
-    showChoices([{ label: 'Начать заново', action: () => { save.clear(); location.reload(); } }]);
-    audio.scream();
+    showChoices([{ label: 'Начать заново', action: () => newGame() }]);
   },
   death: () => {
-    bg('#200');
+    renderBackground('default');
     showText('Ты не выжил. Тьма поглотила тебя.');
     if (!stats.endings.includes('death')) stats.endings.push('death');
     achievements.unlock('first_death'); stats.render();
-    showChoices([{ label: 'Начать заново', action: () => { save.clear(); location.reload(); } }]);
+    showChoices([{ label: 'Начать заново', action: () => newGame() }]);
   },
   ending_escape: () => {
-    bg('#0a0a1a');
+    renderBackground('default');
     showText('Ты выбираешься наружу. Но тень в окне всё ещё смотрит на тебя.');
     if (!stats.endings.includes('escape')) stats.endings.push('escape');
     achievements.unlock('escape');
     if (stats.endings.length >= 4) achievements.unlock('all_endings');
     records.add(stats.playtime, stats.endings.length); stats.render();
     showChoices([{ label: 'Новая игра+', action: () => newGame() }]);
+    audio.victory();
   },
   ending_echo: () => {
-    bg('#1a001a');
+    renderBackground('default');
     showText('Ты становишься Эхом. Теперь ты пишешь другим. В зеркале — уже не ты.');
     if (!stats.endings.includes('echo')) stats.endings.push('echo');
     records.add(stats.playtime, stats.endings.length); stats.render();
     showChoices([{ label: 'Новая игра+', action: () => newGame() }]);
   },
   ending_friend: () => {
-    bg('#0a1a0a');
+    renderBackground('default');
     showText('Ты спасаешь друга. Но часть твоей памяти остаётся там, в тёмной комнате.');
     if (!stats.endings.includes('friend')) stats.endings.push('friend');
     records.add(stats.playtime, stats.endings.length); stats.render();
@@ -761,14 +871,15 @@ function goTo(name) { if (scenes[name]) { state.scene = name; scenes[name](); sa
 let last = performance.now();
 function loop(now) {
   const dt = (now - last) / 1000; last = now;
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  gore.update(); gore.draw();
+  
   if (!state.paused) {
-    enemy.update(dt); shadow.update(dt); shadow.draw(); doll.update();
+    gore.update();
+    enemy.update(dt); 
+    shadow.update(dt); 
+    doll.update();
     batterySystem.drain();
     updateBloodOverlay();
   }
-  drawDarkness();
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
