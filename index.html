@@ -27,16 +27,16 @@ body {
 /* Скример (Jump Scare) */
 #jumpscare {
     position: fixed; inset: 0; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><rect width="100%" height="100%" fill="%23000"/><circle cx="50%" cy="50%" r="30%" fill="%23f00"/><circle cx="40%" cy="45%" r="5%" fill="%23000"/><circle cx="60%" cy="45%" r="5%" fill="%23000"/></svg>') center/cover; 
-    z-index: 1000; display: none; opacity: 1;
+    z-index: 1000; display: none;
 }
-#jumpscare.active { display: block; animation: scareAnim 0.5s; }
-@keyframes scareAnim { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+#jumpscare.active { display: block; animation: scareAnim 0.5s forwards; }
+@keyframes scareAnim { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
 
 /* Эффект телефона */
 #phone-ui {
     position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
     width: 300px; height: 60%; background: #000; border: 8px solid #222; border-radius: 20px;
-    z-index: 80; display: none; flex-direction: column; overflow: hidden;
+    z-index: 60; display: none; flex-direction: column; overflow: hidden;
     box-shadow: 0 0 30px rgba(0,0,0,0.8);
 }
 #phone-ui.active { display: flex; }
@@ -45,8 +45,7 @@ body {
 .chat-msg { background: #222; padding: 8px 12px; border-radius: 10px; font-size: 12px; max-width: 80%; }
 .chat-msg.them { align-self: flex-start; border-bottom-left-radius: 0; }
 .chat-msg.me { align-self: flex-end; background: #600; border-bottom-right-radius: 0; }
-.chat-msg.creepy { background: #300; border: 1px solid #f00; color: #f88; font-weight: bold; animation: glitchText 0.2s infinite; }
-@keyframes glitchText { 0% { transform: translate(0); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(1px, -1px); } }
+.chat-msg.creepy { background: #300; border: 1px solid #f00; color: #f88; font-weight: bold; }
 
 /* Индикатор перехода */
 #transition-text {
@@ -61,7 +60,7 @@ body {
 /* Интерфейс */
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 20px 15px; z-index: 50;
+  padding: 20px 15px; z-index: 70;
   background: linear-gradient(transparent, rgba(0,0,0,0.95) 30%, #000);
   display: flex; flex-direction: column; justify-content: flex-end;
   min-height: 35vh; max-height: 70vh;
@@ -85,7 +84,7 @@ body {
 
 /* Верхний HUD */
 #top-hud {
-  position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; flex-wrap: wrap; gap: 10px;
+  position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 80; flex-wrap: wrap; gap: 10px;
 }
 #stats, #minimap-box { display: flex; gap: 6px; font-size: 13px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
 .stat-badge { background: rgba(15,0,0,0.9); padding: 5px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 5px #000; }
@@ -286,7 +285,7 @@ const audio = {
   hit() { this.tone(150, 0.2, 'square', 0.15); },
   victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); },
   phoneVibrate() { this.tone(150, 0.1, 'square', 0.2); setTimeout(() => this.tone(150, 0.1, 'square', 0.2), 200); },
-  noise() { this.tone(300, 0.05, 'sawtooth', 0.1); } // Звук шума
+  noise() { this.tone(300, 0.05, 'sawtooth', 0.1); }
 };
 
 // ========== СОСТОЯНИЕ ==========
@@ -332,12 +331,15 @@ function notify(msg) {
 }
 
 // ========== СКРИМЕР ==========
+let jumpscareActive = false;
 function triggerJumpscare() {
+    if (jumpscareActive) return;
+    jumpscareActive = true;
     const js = document.getElementById('jumpscare');
     js.classList.add('active');
     audio.scream();
     if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
-    setTimeout(() => js.classList.remove('active'), 500);
+    setTimeout(() => { js.classList.remove('active'); jumpscareActive = false; }, 500);
 }
 
 // ========== ФАЛЬШИВОЕ ОКНО ==========
@@ -444,8 +446,6 @@ const sanity = {
     if (this.value < 40) document.body.style.filter = state.colorblind ? 'contrast(1.5)' : `hue-rotate(${(40-this.value)*3}deg)`;
     else document.body.style.filter = state.colorblind ? 'contrast(1.5)' : '';
     s.classList.toggle('active', this.value < 30);
-    // Кровь на экране при низком HP (добавлено)
-    if (state.hp < 20) document.getElementById('blood-overlay').classList.add('active');
   },
   decrease(n) { this.set(this.value - n); },
   increase(n) { this.set(this.value + n); }
@@ -459,11 +459,7 @@ const staminaSys = {
 
 const noiseSys = {
   value: 0,
-  add(n) { 
-      this.value = Math.min(100, this.value + n); 
-      document.getElementById('noise').textContent = Math.floor(this.value);
-      if (this.value > 50) audio.noise();
-  },
+  add(n) { this.value = Math.min(100, this.value + n); document.getElementById('noise').textContent = Math.floor(this.value); },
   reset() { this.value = 0; document.getElementById('noise').textContent = 0; }
 };
 
@@ -520,6 +516,10 @@ const enemy = {
     else if (this.timer < 10 && Math.random() < 0.05) audio.heartbeat();
   },
   onCatch() {
+    // Защита от смерти в сюжетных сценах
+    if (['part2_phone', 'part2_choice', 'part3_server'].includes(state.scene)) {
+        this.stop(); return; 
+    }
     flash.trigger('#ff0000'); triggerJumpscare();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     sanity.decrease(30); state.hp -= 40;
@@ -577,7 +577,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v22',
+  key: 'bloodhorror_ultimate_v24',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -615,6 +615,7 @@ function startNewGame() {
   state.hp = 100; state.battery = 100; staminaSys.value = 100; state.karma = 0; karma.value = 0; state.savedSurvivor = false;
   sanity.set(100); inventory.items = []; document.getElementById('inv-count').textContent = 0;
   stats.deaths = 0; stats.endings = []; stats.playtime = 0; journal.notes = [];
+  enemy.stop(); // ВАЖНО: Останавливаем врагов при новой игре
   closeMenu();
   goTo('start');
 }
@@ -744,15 +745,13 @@ function renderBackground(sceneId) {
     corridor: '#101015', basement: '#200808', floor2: '#1a1a20', roof: '#0a0d18', 
     default: '#151515', endless: '#250000',
     part2: '#1a1a25',
-    part3_server: '#001100' // Цвет для серверной
+    part3_server: '#001100'
   };
   const bgCol = colors[sceneId] || colors.default;
 
   const drawFrame = () => {
-    // 1. Базовый фон
     ctx.fillStyle = bgCol; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. ПОЛ
     const floorY = canvas.height * 0.6;
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.lineTo(canvas.width, canvas.height); ctx.lineTo(0, canvas.height); ctx.fill();
@@ -763,7 +762,6 @@ function renderBackground(sceneId) {
     }
     for (let i = 1; i <= 5; i++) { let y = floorY + (canvas.height - floorY) * (i/5); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
 
-    // 3. СТЕНЫ
     const wallTop = canvas.height * 0.3;
     const wallBottom = floorY;
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -775,13 +773,10 @@ function renderBackground(sceneId) {
         for (let y = wallTop; y < wallBottom; y += 40) { ctx.beginPath(); ctx.arc(x + 20, y + 20, 5, 0, Math.PI*2); ctx.fill(); }
     }
 
-    // 4. ДЕТАЛИ
     if (sceneId === 'part3_server') {
-        // Ряды серверов
         for (let i = 0; i < 3; i++) {
             let sx = canvas.width * 0.2 + i * (canvas.width * 0.2);
             ctx.fillStyle = '#111'; ctx.fillRect(sx, wallTop + 20, canvas.width * 0.15, wallBottom - wallTop - 20);
-            // Мигающие лампочки
             for (let j = 0; j < 20; j++) {
                 ctx.fillStyle = Math.random() > 0.5 ? '#0f0' : '#f00';
                 ctx.fillRect(sx + 10, wallTop + 40 + j * 15, 5, 5);
@@ -839,7 +834,6 @@ function renderBackground(sceneId) {
 
     gore.draw();
 
-    // 5. ТЬМА
     dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
     let baseDarkness = 0.65; 
     if (['start', 'safe', 'part2', 'part3_server'].includes(sceneId)) baseDarkness = 0.3; 
@@ -863,6 +857,11 @@ function renderBackground(sceneId) {
 function goTo(name) { 
     if (scenes[name]) { 
         state.scene = name; 
+        // ВАЖНО: Останавливаем таймеры врагов при смене сцены, чтобы не умереть в сюжетный момент
+        enemy.stop(); 
+        echo.stop();
+        noiseSys.reset();
+
         const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь', part2: 'Квартира', part2_phone: 'Телефон', part2_choice: 'Диалог', part3_enter: 'Подвал (Спуск)', part3_server: 'Серверная' };
         if (locNames[name]) {
             transText.textContent = locNames[name]; transText.classList.add('show');
@@ -1074,12 +1073,11 @@ const scenes = {
     renderBackground('part2'); state.location = 'Квартира (Телефон)';
     phoneUi.classList.add('active');
     
-    // Тратим заряд телефона
-    state.phoneBattery = Math.max(0, state.phoneBattery - 5);
-    document.getElementById('phone-battery').textContent = `🔋 ${state.phoneBattery}%`;
-    if (state.phoneBattery <= 0) { phoneUi.classList.remove('active'); notify("Телефон сел! Ты не можешь читать сообщения."); return; }
-
     if (phoneChat.children.length === 0) {
+        state.phoneBattery = Math.max(0, state.phoneBattery - 5);
+        document.getElementById('phone-battery').textContent = `🔋 ${state.phoneBattery}%`;
+        if (state.phoneBattery <= 0) { phoneUi.classList.remove('active'); notify("Телефон сел! Ты не можешь читать сообщения."); return; }
+
         addPhoneMessage("Экран загорается. У тебя 1 непрочитанное сообщение в мессенджере.");
         setTimeout(() => {
             addPhoneMessage("Незнакомец: Ты снова здесь.", false, true);
@@ -1136,17 +1134,11 @@ const scenes = {
   // --- ТРЕТЬЯ ЧАСТЬ ---
   part3_enter: () => {
     renderBackground('basement'); state.location = 'Подвал дома';
-    showText('Ты спускаешься в темный подвал. Воняет сыростью. На стене висит кодовый замок от двери в бомбоубежище.');
+    showText('Ты спускаешься в темный подвал. Воняет сыростью. На стене висит кодовый замок от двери в бомбоубежище. На замке 3 кнопки: А, Б, В.');
     showChoices([
-        { label: 'Взломать замок (Мини-игра)', action: () => {
-            showText('Нужно подобрать код. На экране замка мелькают цифры.');
-            showChoices([
-                { label: 'Попробовать 1', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
-                { label: 'Попробовать 2', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
-                { label: 'Попробовать 3', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
-                { label: 'Попробовать 4', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
-            ]);
-        }},
+        { label: 'Нажать А', action: () => checkCode('А') },
+        { label: 'Нажать Б', action: () => checkCode('Б') },
+        { label: 'Нажать В', action: () => checkCode('В') },
         { label: 'Сдаться и уйти', action: () => { notify('Ты не можешь уйти. Оно не отпустит тебя.'); goTo('part3_enter'); } }
     ]);
   },
@@ -1168,6 +1160,34 @@ const scenes = {
     ]);
   }
 };
+
+// Функция проверки кода
+function checkCode(btn) {
+    const correct = 'Б'; // Правильный ответ - Б
+    if (btn === correct) {
+        audio.unlock();
+        showText('Замок щелкает! Дверь открывается.');
+        goTo('part3_server');
+    } else {
+        noiseSys.add(40);
+        audio.noise();
+        notify('Неверно! Шум усиливается.');
+        if (noiseSys.value >= 80) {
+            triggerJumpscare();
+            state.hp -= 50;
+            document.getElementById('hp').textContent = Math.max(0, state.hp);
+            if (state.hp <= 0) {
+                showText('Оно нашло тебя по шуму...');
+                setTimeout(() => startNewGame(), 2000);
+            } else {
+                noiseSys.reset();
+                goTo('part3_enter');
+            }
+        } else {
+            goTo('part3_enter');
+        }
+    }
+}
 
 // ========== ЦИКЛ ==========
 let last = performance.now();
