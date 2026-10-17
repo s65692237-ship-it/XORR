@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Blood Horror: Ultimate Graphics</title>
+<title>Blood Horror: Ultimate - Part 2</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
@@ -23,6 +23,22 @@ body {
 #vignette { position: absolute; inset: 0; pointer-events: none; z-index: 5; background: radial-gradient(circle, transparent 40%, rgba(0,0,0,1) 100%); }
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 6; }
 #blood-overlay.active { opacity: 1; }
+
+/* Эффект телефона */
+#phone-ui {
+    position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
+    width: 300px; height: 60%; background: #000; border: 8px solid #222; border-radius: 20px;
+    z-index: 80; display: none; flex-direction: column; overflow: hidden;
+    box-shadow: 0 0 30px rgba(0,0,0,0.8);
+}
+#phone-ui.active { display: flex; }
+#phone-header { background: #111; padding: 10px; text-align: center; font-size: 12px; border-bottom: 1px solid #333; }
+#phone-chat { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.chat-msg { background: #222; padding: 8px 12px; border-radius: 10px; font-size: 12px; max-width: 80%; }
+.chat-msg.them { align-self: flex-start; border-bottom-left-radius: 0; }
+.chat-msg.me { align-self: flex-end; background: #600; border-bottom-right-radius: 0; }
+.chat-msg.creepy { background: #300; border: 1px solid #f00; color: #f88; font-weight: bold; animation: glitchText 0.2s infinite; }
+@keyframes glitchText { 0% { transform: translate(0); } 50% { transform: translate(-1px, 1px); } 100% { transform: translate(1px, -1px); } }
 
 /* Индикатор перехода */
 #transition-text {
@@ -156,6 +172,7 @@ body {
   #ui { padding: 20px 50px; min-height: 30vh; }
   #text-box { font-size: 20px; }
   .choice-btn { max-width: 600px; }
+  #phone-ui { width: 400px; height: 70%; }
 }
 </style>
 </head>
@@ -170,6 +187,11 @@ body {
   <div id="shake"></div>
   <div id="transition-text"></div>
   
+  <div id="phone-ui">
+    <div id="phone-header">Анонимный чат</div>
+    <div id="phone-chat"></div>
+  </div>
+
   <div id="top-hud">
     <div id="stats">
       <span class="stat-badge">❤️ <span id="hp">100</span></span>
@@ -248,7 +270,8 @@ const audio = {
   unlock() { this.tone(400, 0.1, 'square', 0.1); setTimeout(() => this.tone(600, 0.2, 'square', 0.1), 100); },
   echo() { this.tone(200, 0.4, 'sawtooth', 0.08); setTimeout(() => this.tone(180, 0.4, 'sawtooth', 0.06), 200); },
   hit() { this.tone(150, 0.2, 'square', 0.15); },
-  victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); }
+  victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); },
+  phoneVibrate() { this.tone(150, 0.1, 'square', 0.2); setTimeout(() => this.tone(150, 0.1, 'square', 0.2), 200); }
 };
 
 // ========== СОСТОЯНИЕ ==========
@@ -264,6 +287,8 @@ const menuOverlay = document.getElementById('menu-overlay');
 const menuTitle = document.getElementById('menu-title');
 const menuContent = document.getElementById('menu-content');
 const transText = document.getElementById('transition-text');
+const phoneUi = document.getElementById('phone-ui');
+const phoneChat = document.getElementById('phone-chat');
 
 let state = { 
   scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
@@ -289,6 +314,16 @@ function notify(msg) {
   n.textContent = msg; n.classList.add('active');
   setTimeout(() => n.classList.remove('active'), 2500);
   if (navigator.vibrate) navigator.vibrate(50);
+}
+
+// ========== ЛОГИКА ТЕЛЕФОНА (Вторая часть) ==========
+function addPhoneMessage(text, isMe = false, isCreepy = false) {
+    const msg = document.createElement('div');
+    msg.className = `chat-msg ${isMe ? 'me' : 'them'} ${isCreepy ? 'creepy' : ''}`;
+    msg.textContent = text;
+    phoneChat.appendChild(msg);
+    phoneChat.scrollTop = phoneChat.scrollHeight;
+    if (!isMe) audio.phoneVibrate();
 }
 
 // ========== ФАЛЬШИВОЕ ОКНО ==========
@@ -358,9 +393,7 @@ const gore = {
     this.puddles.forEach(p => { 
         ctx.fillStyle = `rgba(120,0,0,${p.alpha})`; 
         ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r*0.3, 0, 0, Math.PI*2); ctx.fill(); 
-        // Блик на луже
-        ctx.fillStyle = `rgba(200,50,50,${p.alpha * 0.5})`;
-        ctx.beginPath(); ctx.ellipse(p.x - p.r*0.2, p.y - p.r*0.05, p.r*0.3, p.r*0.1, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = `rgba(200,50,50,${p.alpha * 0.5})`; ctx.beginPath(); ctx.ellipse(p.x - p.r*0.2, p.y - p.r*0.05, p.r*0.3, p.r*0.1, 0, 0, Math.PI*2); ctx.fill();
     });
     this.particles.forEach(p => { ctx.fillStyle = `rgba(200,0,0,${Math.min(1, p.life/60)})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
   }
@@ -501,7 +534,7 @@ const journal = {
 
 const achievements = {
   unlocked: [],
-  defs: { 'first_death': 'Смерть', 'escape': 'Сбежал', 'caught': 'Пойман', 'true_ending': 'Истина', 'good_samaritan': 'Добряк', 'crafter': 'Крафтер', 'journalist': 'Архивист', 'night_owl': 'Ночной житель', 'speedrunner': 'Спидраннер', 'endless_10': 'Кошмар 10 волн' },
+  defs: { 'first_death': 'Смерть', 'escape': 'Сбежал', 'caught': 'Пойман', 'true_ending': 'Истина', 'good_samaritan': 'Добряк', 'crafter': 'Крафтер', 'journalist': 'Архивист', 'night_owl': 'Ночной житель', 'speedrunner': 'Спидраннер', 'endless_10': 'Кошмар 10 волн', 'part2_start': 'Пробуждение' },
   unlock(id) { if (!this.unlocked.includes(id) && this.defs[id]) { this.unlocked.push(id); notify('🏆 ' + this.defs[id]); audio.pickup(); } }
 };
 
@@ -518,7 +551,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v20',
+  key: 'bloodhorror_ultimate_v21',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -578,6 +611,7 @@ function renderMenu(type) {
       <button onclick="renderMenu('inventory')">Инвентарь</button>
       <button onclick="renderMenu('journal')">Дневник</button>
       <button onclick="renderMenu('settings')">Настройки</button>
+      <button onclick="renderMenu('about')" style="color:#aaa;">Об игре</button>
       <button onclick="startNewGame()" style="color:#f44; margin-top:20px;">Начать заново</button>
     `;
   } 
@@ -612,7 +646,19 @@ function renderMenu(type) {
     menuTitle.textContent = 'ДНЕВНИК';
     let html = ''; journal.notes.forEach(n => { html += `<div class="journal-item"><b>${n.title}</b><br>${n.text}</div>`; });
     menuContent.innerHTML = `<div id="journal-list">${html || '<p style="color:#666;">Пусто</p>'}</div><button onclick="renderMenu('pause')">Назад</button>`;
-  } 
+  }
+  else if (type === 'about') {
+    menuTitle.textContent = 'ОБ ИГРЕ';
+    menuContent.innerHTML = `
+      <div style="max-width:400px; text-align:left; color:#aaa; line-height:1.6; margin-bottom:20px;">
+        <p><b>Blood Horror: Ultimate</b></p>
+        <p>Ты просыпаешься в комнате, не помня, как здесь оказался. Твоя цель — выбраться, но тьма не хочет тебя отпускать.</p>
+        <p><b>Механики:</b> Следи за рассудком, собирай записки, используй фонарик и оружие. Ищи подсказки в случайных событиях.</p>
+        <p><b>Вторая часть:</b> После побега игра не заканчивается. Проснувшись дома, ты поймешь, что это было не просто сном.</p>
+      </div>
+      <button onclick="renderMenu('pause')">Назад</button>
+    `;
+  }
 }
 
 function togglePauseMenu() {
@@ -662,15 +708,15 @@ function showChoices(list) {
 }
 function clearChoices() { choicesBox.innerHTML = ''; }
 
-// ========== УЛУЧШЕННАЯ ГРАФИКА (ПРОЦЕДУРНЫЕ ТЕКСТУРЫ) ==========
+// ========== УЛУЧШЕННАЯ ГРАФИКА ==========
 function renderBackground(sceneId) {
   if (drawInterval) clearInterval(drawInterval);
   
-  // Базовые цвета для локаций
   const colors = { 
     start: '#2a2520', look_around: '#2a2520', corner: '#3a1010', door: '#1a1a22', 
     corridor: '#101015', basement: '#200808', floor2: '#1a1a20', roof: '#0a0d18', 
-    default: '#151515', endless: '#250000' 
+    default: '#151515', endless: '#250000',
+    part2: '#1a1a25' // Цвет для 2 части
   };
   const bgCol = colors[sceneId] || colors.default;
 
@@ -678,154 +724,97 @@ function renderBackground(sceneId) {
     // 1. Базовый фон
     ctx.fillStyle = bgCol; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. ПОЛ (Деревянные доски)
+    // 2. ПОЛ
     const floorY = canvas.height * 0.6;
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.lineTo(canvas.width, canvas.height); ctx.lineTo(0, canvas.height); ctx.fill();
     
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; ctx.lineWidth = 2;
     for (let i = -canvas.width; i < canvas.width * 2; i += 60) {
-      ctx.beginPath(); 
-      ctx.moveTo(canvas.width/2 + i * 0.2, floorY); 
-      ctx.lineTo(canvas.width/2 + i * 1.5, canvas.height); 
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(canvas.width/2 + i * 0.2, floorY); ctx.lineTo(canvas.width/2 + i * 1.5, canvas.height); ctx.stroke();
     }
-    // Горизонтальные стыки досок
-    for (let i = 1; i <= 5; i++) {
-        let y = floorY + (canvas.height - floorY) * (i/5);
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-    }
+    for (let i = 1; i <= 5; i++) { let y = floorY + (canvas.height - floorY) * (i/5); ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke(); }
 
-    // 3. СТЕНЫ (Обои)
+    // 3. СТЕНЫ
     const wallTop = canvas.height * 0.3;
     const wallBottom = floorY;
-    // Левая стена
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(canvas.width * 0.2, wallTop); ctx.lineTo(canvas.width * 0.2, wallBottom); ctx.lineTo(0, floorY); ctx.fill();
-    // Правая стена
     ctx.beginPath(); ctx.moveTo(canvas.width, 0); ctx.lineTo(canvas.width * 0.8, wallTop); ctx.lineTo(canvas.width * 0.8, wallBottom); ctx.lineTo(canvas.width, floorY); ctx.fill();
-    
-    // Задняя стена
-    ctx.fillStyle = 'rgba(0,0,0,0.3)'; 
-    ctx.fillRect(canvas.width * 0.2, wallTop, canvas.width * 0.6, wallBottom - wallTop);
-    
-    // Узор на обоях
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(canvas.width * 0.2, wallTop, canvas.width * 0.6, wallBottom - wallTop);
     ctx.fillStyle = 'rgba(255,255,255,0.02)';
     for (let x = canvas.width * 0.2; x < canvas.width * 0.8; x += 40) {
-        for (let y = wallTop; y < wallBottom; y += 40) {
-            ctx.beginPath(); ctx.arc(x + 20, y + 20, 5, 0, Math.PI*2); ctx.fill();
-        }
+        for (let y = wallTop; y < wallBottom; y += 40) { ctx.beginPath(); ctx.arc(x + 20, y + 20, 5, 0, Math.PI*2); ctx.fill(); }
     }
 
-    // 4. ДЕТАЛИ ОКРУЖЕНИЯ
+    // 4. ДЕТАЛИ
     if (sceneId === 'start' || sceneId === 'look_around') {
-        // Окно (Ночное небо)
         const wx = canvas.width * 0.7, wy = wallTop + 40, ww = canvas.width * 0.15, wh = canvas.height * 0.2;
         ctx.fillStyle = '#050a15'; ctx.fillRect(wx, wy, ww, wh);
-        // Луна
         ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.arc(wx + ww*0.7, wy + wh*0.3, 15, 0, Math.PI*2); ctx.fill();
-        // Рамы
         ctx.strokeStyle = '#222'; ctx.lineWidth = 6; ctx.strokeRect(wx, wy, ww, wh);
         ctx.beginPath(); ctx.moveTo(wx + ww/2, wy); ctx.lineTo(wx + ww/2, wy + wh); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(wx, wy + wh/2); ctx.lineTo(wx + ww, wy + wh/2); ctx.stroke();
-
-        // Дверь (Деревянная)
         const dx = canvas.width * 0.4, dy = wallTop + 20, dw = canvas.width * 0.2, dh = wallBottom - dy;
         ctx.fillStyle = '#2a1a10'; ctx.fillRect(dx, dy, dw, dh);
-        // Филенки (вставки) на двери
-        ctx.strokeStyle = '#150a05'; ctx.lineWidth = 3;
-        ctx.strokeRect(dx + 10, dy + 10, dw - 20, dh*0.4);
-        ctx.strokeRect(dx + 10, dy + dh*0.5, dw - 20, dh*0.4);
-        // Ручка
-        ctx.fillStyle = '#8a7a5a'; ctx.beginPath(); ctx.arc(dx + dw - 15, dy + dh*0.5, 6, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = '#000'; ctx.stroke();
-
-    } else if (sceneId === 'corridor') {
-        // Мигающая лампа
+        ctx.strokeStyle = '#150a05'; ctx.lineWidth = 3; ctx.strokeRect(dx + 10, dy + 10, dw - 20, dh*0.4); ctx.strokeRect(dx + 10, dy + dh*0.5, dw - 20, dh*0.4);
+        ctx.fillStyle = '#8a7a5a'; ctx.beginPath(); ctx.arc(dx + dw - 15, dy + dh*0.5, 6, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.stroke();
+    } 
+    else if (sceneId === 'part2') {
+        // Окно с жалюзи
+        const wx = canvas.width * 0.2, wy = wallTop + 50, ww = canvas.width * 0.2, wh = canvas.height * 0.25;
+        ctx.fillStyle = '#222'; ctx.fillRect(wx, wy, ww, wh);
+        for (let i = 0; i < wh; i += 10) { ctx.fillStyle = i % 20 === 0 ? '#111' : '#333'; ctx.fillRect(wx, wy + i, ww, 5); }
+        // Кровать
+        const bx = canvas.width * 0.5, by = wallBottom - 60, bw = canvas.width * 0.3, bh = 80;
+        ctx.fillStyle = '#111'; ctx.fillRect(bx, by, bw, bh);
+        ctx.fillStyle = '#300'; ctx.fillRect(bx + 10, by + 10, bw - 20, bh - 20); // Одеяло
+        ctx.fillStyle = '#fff'; ctx.fillRect(bx + 10, by - 10, 40, 20); // Подушка
+    }
+    else if (sceneId === 'corridor') {
         if (Math.random() > 0.1) {
             const lightGrad = ctx.createRadialGradient(canvas.width/2, wallTop, 10, canvas.width/2, wallTop, canvas.width*0.5);
-            lightGrad.addColorStop(0, 'rgba(200,200,150,0.4)');
-            lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            lightGrad.addColorStop(0, 'rgba(200,200,150,0.4)'); lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = lightGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        // Кровавые подтеки на стене
         ctx.fillStyle = 'rgba(100,0,0,0.6)';
-        for(let i=0; i<5; i++) {
-            let sx = canvas.width * 0.2 + Math.random() * canvas.width * 0.6;
-            let sy = wallTop + Math.random() * 50;
-            ctx.fillRect(sx, sy, 2 + Math.random()*3, 50 + Math.random()*100);
-            ctx.beginPath(); ctx.arc(sx+2, sy, 4, 0, Math.PI*2); ctx.fill();
-        }
+        for(let i=0; i<5; i++) { let sx = canvas.width * 0.2 + Math.random() * canvas.width * 0.6; let sy = wallTop + Math.random() * 50; ctx.fillRect(sx, sy, 2 + Math.random()*3, 50 + Math.random()*100); ctx.beginPath(); ctx.arc(sx+2, sy, 4, 0, Math.PI*2); ctx.fill(); }
     } else if (sceneId === 'basement') {
-        // Трубы
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 12;
-        ctx.beginPath(); ctx.moveTo(0, wallTop+20); ctx.lineTo(canvas.width, wallTop+20); ctx.stroke();
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 12; ctx.beginPath(); ctx.moveTo(0, wallTop+20); ctx.lineTo(canvas.width, wallTop+20); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(canvas.width * 0.3, 0); ctx.lineTo(canvas.width * 0.3, wallTop+20); ctx.stroke();
-        // Вентиль
         ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(canvas.width * 0.3, wallTop+20, 15, 0, Math.PI*2); ctx.fill();
-        // Кровь с трубы
-        ctx.fillStyle = '#700';
-        ctx.beginPath(); ctx.arc(canvas.width * 0.6, wallTop+25, 3, 0, Math.PI*2); ctx.fill();
-        ctx.fillRect(canvas.width * 0.6 - 1, wallTop+25, 2, 80);
-
+        ctx.fillStyle = '#700'; ctx.beginPath(); ctx.arc(canvas.width * 0.6, wallTop+25, 3, 0, Math.PI*2); ctx.fill(); ctx.fillRect(canvas.width * 0.6 - 1, wallTop+25, 2, 80);
     } else if (sceneId === 'floor2') {
-        // Колыбель
         const cx = canvas.width * 0.65, cy = wallBottom - 40, cw = canvas.width * 0.2, ch = 60;
-        ctx.strokeStyle = '#332211'; ctx.lineWidth = 6;
-        // Ножки
-        ctx.beginPath(); ctx.moveTo(cx, cy+ch); ctx.lineTo(cx+10, cy); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx+cw, cy+ch); ctx.lineTo(cx+cw-10, cy); ctx.stroke();
-        // Корпус
-        ctx.strokeRect(cx+5, cy, cw-10, 30);
-        // Матрас
-        ctx.fillStyle = '#600'; ctx.fillRect(cx+10, cy+5, cw-20, 20);
-        // Перила
-        for (let i=10; i<cw-10; i+=15) { ctx.beginPath(); ctx.moveTo(cx+i, cy); ctx.lineTo(cx+i, cy-30); ctx.stroke(); }
-        ctx.beginPath(); ctx.moveTo(cx+5, cy-30); ctx.lineTo(cx+cw-5, cy-30); ctx.stroke();
-
+        ctx.strokeStyle = '#332211'; ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(cx, cy+ch); ctx.lineTo(cx+10, cy); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx+cw, cy+ch); ctx.lineTo(cx+cw-10, cy); ctx.stroke();
+        ctx.strokeRect(cx+5, cy, cw-10, 30); ctx.fillStyle = '#600'; ctx.fillRect(cx+10, cy+5, cw-20, 20);
+        for (let i=10; i<cw-10; i+=15) { ctx.beginPath(); ctx.moveTo(cx+i, cy); ctx.lineTo(cx+i, cy-30); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(cx+5, cy-30); ctx.lineTo(cx+cw-5, cy-30); ctx.stroke();
     } else if (sceneId === 'roof') {
-        // Город внизу
         ctx.fillStyle = '#020205'; ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
-        // Огни города
-        ctx.fillStyle = 'rgba(255, 200, 100, 0.4)';
-        for(let i=0; i<30; i++) {
-            ctx.fillRect(Math.random() * canvas.width, floorY + Math.random() * (canvas.height - floorY), 3, 3);
-        }
-        // Перила
-        ctx.strokeStyle = '#222'; ctx.lineWidth = 4;
-        ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.stroke();
-        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i, floorY); ctx.lineTo(i, canvas.height); ctx.stroke(); }
-        ctx.beginPath(); ctx.moveTo(0, floorY+50); ctx.lineTo(canvas.width, floorY+50); ctx.stroke();
-    }
-    else {
-        // Стандартная дверь
+        ctx.fillStyle = 'rgba(255, 200, 100, 0.4)'; for(let i=0; i<30; i++) { ctx.fillRect(Math.random() * canvas.width, floorY + Math.random() * (canvas.height - floorY), 3, 3); }
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.stroke();
+        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i, floorY); ctx.lineTo(i, canvas.height); ctx.stroke(); } ctx.beginPath(); ctx.moveTo(0, floorY+50); ctx.lineTo(canvas.width, floorY+50); ctx.stroke();
+    } else {
         const dx = canvas.width * 0.4, dy = wallTop + 20, dw = canvas.width * 0.2, dh = wallBottom - dy;
-        ctx.fillStyle = '#2a1a10'; ctx.fillRect(dx, dy, dw, dh);
-        ctx.strokeStyle = '#150a05'; ctx.lineWidth = 3;
-        ctx.strokeRect(dx + 10, dy + 10, dw - 20, dh*0.4);
-        ctx.strokeRect(dx + 10, dy + dh*0.5, dw - 20, dh*0.4);
+        ctx.fillStyle = '#2a1a10'; ctx.fillRect(dx, dy, dw, dh); ctx.strokeStyle = '#150a05'; ctx.lineWidth = 3;
+        ctx.strokeRect(dx + 10, dy + 10, dw - 20, dh*0.4); ctx.strokeRect(dx + 10, dy + dh*0.5, dw - 20, dh*0.4);
     }
 
     gore.draw();
 
-    // 5. ТЬМА И СВЕТ
+    // 5. ТЬМА
     dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
-    let baseDarkness = 0.65; // Темнее, чтобы фонарик был нужен
-    if (['start', 'safe'].includes(sceneId)) baseDarkness = 0.3; // Чуть светлее
+    let baseDarkness = 0.65; 
+    if (['start', 'safe', 'part2'].includes(sceneId)) baseDarkness = 0.3; 
     
-    dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; 
-    dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
+    dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
     
     if (state.flashlightOn) {
       const cx = darkCanvas.width / 2, cy = darkCanvas.height / 2;
       const grad = dctx.createRadialGradient(cx, cy, 50, cx, cy, Math.max(canvas.width, canvas.height) * 0.6);
-      grad.addColorStop(0, 'rgba(0,0,0,0)'); 
-      grad.addColorStop(0.4, 'rgba(0,0,0,0.3)'); 
-      grad.addColorStop(1, `rgba(0,0,0,${baseDarkness})`);
-      dctx.globalCompositeOperation = 'destination-out'; 
-      dctx.fillStyle = grad;
-      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height); 
-      dctx.globalCompositeOperation = 'source-over';
+      grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(0.4, 'rgba(0,0,0,0.3)'); grad.addColorStop(1, `rgba(0,0,0,${baseDarkness})`);
+      dctx.globalCompositeOperation = 'destination-out'; dctx.fillStyle = grad;
+      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height); dctx.globalCompositeOperation = 'source-over';
     }
     
     weather.update();
@@ -837,7 +826,7 @@ function renderBackground(sceneId) {
 function goTo(name) { 
     if (scenes[name]) { 
         state.scene = name; 
-        const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь' };
+        const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь', part2: 'Квартира (Часть 2)' };
         if (locNames[name]) {
             transText.textContent = locNames[name]; transText.classList.add('show');
             setTimeout(() => transText.classList.remove('show'), 1000);
@@ -989,6 +978,8 @@ const scenes = {
       { label: 'Выход', action: () => { state.endlessMode = false; goTo('start'); } }
     ]);
   },
+  
+  // --- КОНЦОВКИ ПЕРВОЙ ЧАСТИ ---
   caught: () => {
     renderBackground('corner'); flash.trigger('#ff0000'); gore.spawn(canvas.width/2, canvas.height/2, 100);
     showText('Оно хватает тебя. Ты чувствуешь, как теряешь контроль над своим телом...');
@@ -1004,10 +995,10 @@ const scenes = {
   },
   ending_escape: () => {
     renderBackground('roof'); audio.victory();
-    showText('Ты выбираешься на улицу. Но тень в окне твоего дома всё ещё смотрит на тебя.');
+    showText('Ты выбираешься на улицу. Свежий воздух. Ты спасся. Ты идешь домой и падаешь на кровать, надеясь, что этот кошмар больше не вернется...');
     if (!stats.endings.includes('escape')) stats.endings.push('escape');
     if (state.speedrunMode) achievements.unlock('speedrunner');
-    showChoices([{ label: 'Начать заново', action: () => startNewGame() }]);
+    showChoices([{ label: 'Продолжить (Часть 2)', action: () => { achievements.unlock('part2_start'); goTo('part2'); } }]);
   },
   ending_echo: () => {
     renderBackground('default');
@@ -1019,6 +1010,84 @@ const scenes = {
     showText('Ты собрал все записки. Ты узнал правду. Это был не сон. Это было чистилище для тех, кто совершил грехи.');
     achievements.unlock('true_ending');
     showChoices([{ label: 'Начать заново', action: () => startNewGame() }]);
+  },
+
+  // --- ВТОРАЯ ЧАСТЬ ---
+  part2: () => {
+    renderBackground('part2'); state.location = 'Квартира (Утро)'; state.scene = 'part2';
+    phoneUi.classList.remove('active');
+    phoneChat.innerHTML = '';
+    
+    showText('Чёрт... Опять этот сон. Ты просыпаешься в своей кровати, весь в холодном поту. На часах 03:33. В комнате темно, но это твоя обычная квартира.');
+    showChoices([
+      { label: 'Включить свет', action: () => {
+          showText('Ты щелкаешь выключателем, но свет не загорается. Похоже, пробки выбило.');
+          showChoices([
+            { label: 'Взять телефон', action: () => goTo('part2_phone') },
+            { label: 'Выйти в коридор', action: () => { notify('В коридоре слишком темно. Нужен свет.'); goTo('part2'); } }
+          ]);
+      }},
+      { label: 'Посмотреть на телефон', action: () => goTo('part2_phone') }
+    ]);
+  },
+
+  part2_phone: () => {
+    renderBackground('part2'); state.location = 'Квартира (Телефон)';
+    phoneUi.classList.add('active');
+    
+    if (phoneChat.children.length === 0) {
+        addPhoneMessage("Экран загорается. У тебя 1 непрочитанное сообщение в мессенджере.");
+        setTimeout(() => {
+            addPhoneMessage("Незнакомец: Ты снова здесь.", false, true);
+            setTimeout(() => {
+                addPhoneMessage("Незнакомец: Я знал, что ты вернешься. Ты думал, это сон?", false, true);
+                showChoices([
+                    { label: 'Ответить: Кто ты?', action: () => {
+                        addPhoneMessage("Кто ты?", true);
+                        setTimeout(() => {
+                            addPhoneMessage("Незнакомец: Я — это ты. Только умнее. Ты оставил меня там.", false, true);
+                            goTo('part2_choice');
+                        }, 1000);
+                    }},
+                    { label: 'Игнорировать и выключить телефон', action: () => {
+                        phoneUi.classList.remove('active');
+                        showText('Ты выключаешь телефон. Но он тут же вибрирует снова. Экран мигает и показывает: "НЕ ОТКЛЮЧАЙ".');
+                        sanity.decrease(10);
+                        showChoices([{ label: 'Посмотреть снова', action: () => goTo('part2_phone') }]);
+                    }}
+                ]);
+            }, 2000);
+        }, 2000);
+    } else {
+        showChoices([{ label: 'Продолжить', action: () => goTo('part2_choice') }]);
+    }
+  },
+
+  part2_choice: () => {
+    renderBackground('part2'); state.location = 'Квартира (Диалог)';
+    showText('Сообщения продолжают приходить. "Ты оставил меня. Теперь я буду приходить за тобой. Или ты придешь сам."');
+    showChoices([
+        { label: 'Я приду сам. Куда?', action: () => {
+            addPhoneMessage("Я приду сам. Куда?", true);
+            setTimeout(() => {
+                addPhoneMessage("Незнакомец: В подвал твоего дома. Спускайся.", false, true);
+                showText('Телефон выключается. В коридоре слышен скрип открывающейся двери.');
+                showChoices([{ label: 'Выйти в коридор', action: () => {
+                    notify("Это только начало...");
+                    // Здесь можно начать 3 часть, но пока вернем в меню
+                    setTimeout(() => startNewGame(), 3000);
+                }}]);
+            }, 1500);
+        }},
+        { label: 'Я не буду тебя слушать (Удалить чат)', action: () => {
+            addPhoneMessage("Ты удаляешь чат.", true);
+            phoneChat.innerHTML = '';
+            phoneUi.classList.remove('active');
+            showText('Ты блокируешь номер и удаляешь чат. Тишина. Ты думаешь, что все закончилось. Но твое отражение в выключенном экране телефона улыбается тебе.');
+            achievements.unlock('caught');
+            setTimeout(() => startNewGame(), 4000);
+        }}
+    ]);
   }
 };
 
