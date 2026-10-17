@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Blood Horror: Ultimate</title>
 <style>
+/* СБРОС И БАЗА */
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
   background: #000; color: #ccc;
@@ -12,9 +13,9 @@ body {
   overflow: hidden; height: 100vh; width: 100vw;
   touch-action: manipulation;
 }
-#game { position: relative; width: 100%; height: 100%; background: #050505; overflow: hidden; }
+#game { position: relative; width: 100vw; height: 100vh; background: #050505; overflow: hidden; }
 
-/* Слои графики */
+/* СЛОИ ГРАФИКИ (Z-INDEX 1-5) */
 #scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 #darkness-mask { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 #weather { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
@@ -22,18 +23,26 @@ body {
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 5; }
 #blood-overlay.active { opacity: 1; }
 
-/* Интерфейс (Текст и Кнопки) */
+/* ВЕРХНИЙ HUD (Z-INDEX 10) */
+#top-hud {
+  position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; flex-wrap: wrap; gap: 10px;
+}
+#stats, #minimap-box { display: flex; gap: 6px; font-size: 14px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
+.stat-badge { background: rgba(20,0,0,0.9); padding: 5px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 4px; }
+#minimap-box { background: rgba(0,0,0,0.9); border: 1px solid #333; padding: 5px 8px; font-size: 12px; color: #aaa; flex-direction: column; text-align: right; }
+
+/* ИНТЕРФЕЙС ИГРЫ (ТЕКСТ И КНОПКИ ВНИЗУ) (Z-INDEX 20) */
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 20px 15px; z-index: 50;
-  background: linear-gradient(transparent, rgba(0,0,0,0.95) 20%, #000);
+  padding: 20px; z-index: 20;
+  background: linear-gradient(transparent, rgba(0,0,0,0.9) 20%, #000);
   display: flex; flex-direction: column; justify-content: flex-end;
   min-height: 35vh; max-height: 70vh;
   pointer-events: none; /* Пропускаем клики к кнопкам */
 }
 #text-box { 
   font-size: 18px; line-height: 1.5; margin-bottom: 15px; min-height: 50px; 
-  text-shadow: 0 0 6px #000, 0 0 3px #000; pointer-events: auto; color: #e0e0e0;
+  text-shadow: 0 0 6px #000; pointer-events: auto; color: #e0e0e0;
   word-wrap: break-word;
 }
 #choices { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; width: 100%; }
@@ -46,33 +55,8 @@ body {
 .choice-btn:hover { background: rgba(80, 0, 0, 1); border-color: #f00; }
 .choice-btn:active { background: #a00; transform: scale(0.98); }
 
-/* Верхняя панель (Статы) - опущена вниз, чтобы не мешать */
-#top-hud {
-  position: absolute; top: 15px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; flex-wrap: wrap; gap: 10px;
-}
-#stats, #minimap-box { display: flex; gap: 6px; font-size: 13px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
-.stat-badge { background: rgba(20,0,0,0.9); padding: 5px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 4px; }
-#minimap-box { background: rgba(0,0,0,0.9); border: 1px solid #333; padding: 5px 8px; font-size: 12px; color: #aaa; flex-direction: column; text-align: right; }
-
-/* Эффекты */
-#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 150; }
-#flash.active { opacity: 1; }
-#shake { position: fixed; inset: 0; pointer-events: none; z-index: 49; }
-#shake.active { animation: shake 0.3s infinite; }
-@keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-4px,3px); } 50% { transform: translate(3px,-4px); } 75% { transform: translate(-3px,-2px); } }
-
-/* Уведомления */
-#notify {
-  position: fixed; top: 100px; right: 10px;
-  background: rgba(60,0,0,0.95); border: 1px solid #a00;
-  padding: 10px 16px; color: #fff; font-size: 14px;
-  opacity: 0; transition: opacity 0.3s; pointer-events: none;
-  max-width: 80vw; border-radius: 6px; z-index: 120;
-}
-#notify.active { opacity: 1; }
-
-/* Мобильные кнопки */
-#touch-controls { position: fixed; bottom: 20px; right: 20px; display: none; gap: 10px; z-index: 70; }
+/* МОБИЛЬНЫЕ КНОПКИ (Z-INDEX 30) */
+#touch-controls { position: absolute; bottom: 20px; right: 20px; display: none; gap: 10px; z-index: 30; }
 #touch-controls button {
   background: rgba(60,0,0,0.9); border: 2px solid #a00; color: #fff;
   width: 60px; height: 60px; border-radius: 50%; font-size: 20px; cursor: pointer;
@@ -81,41 +65,66 @@ body {
 #touch-controls button span { font-size: 9px; margin-top: 2px; }
 @media (max-width: 768px) { #touch-controls { display: flex; } }
 
-/* МЕНЮ (Исправлено: теперь строго по центру и перекрывает всё) */
+/* УВЕДОМЛЕНИЯ (Z-INDEX 150) */
+#notify {
+  position: absolute; top: 80px; right: 10px;
+  background: rgba(60,0,0,0.95); border: 1px solid #a00;
+  padding: 10px 16px; color: #fff; font-size: 14px;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  max-width: 80vw; border-radius: 6px; z-index: 150;
+}
+#notify.active { opacity: 1; }
+
+/* ВСПЫШКА (Z-INDEX 160) */
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 160; }
+#flash.active { opacity: 1; }
+#shake { position: fixed; inset: 0; pointer-events: none; z-index: 49; }
+#shake.active { animation: shake 0.3s infinite; }
+@keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-4px,3px); } 50% { transform: translate(3px,-4px); } 75% { transform: translate(-3px,-2px); } }
+
+/* ГЛАВНОЕ МЕНЮ (САМЫЙ ВЕРХНИЙ СЛОЙ, Z-INDEX 500) */
 #menu-overlay {
-  position: fixed; inset: 0; background: rgba(5, 0, 0, 0.98);
-  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  position: fixed; inset: 0; 
+  background: rgba(10, 0, 0, 0.98);
+  display: none; /* Скрыто по умолчанию */
+  flex-direction: column; align-items: center; justify-content: center; gap: 10px;
   z-index: 500; padding: 20px; overflow-y: auto;
 }
 #menu-overlay.active { display: flex; }
 #menu-overlay h2 { color: #f00; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 15px #f00; text-align: center; }
+
+/* Стили для кнопок меню */
 #menu-overlay button {
   background: #1a0000; border: 1px solid #5a0000; color: #ccc;
   padding: 14px 32px; cursor: pointer; font-family: inherit; font-size: 16px;
-  min-width: 260px; border-radius: 6px; transition: background 0.2s; margin-bottom: 5px;
+  width: 100%; max-width: 300px; border-radius: 6px; transition: background 0.2s; 
 }
 #menu-overlay button:hover { background: #3a0000; color: #fff; border-color: #a00; }
 #menu-overlay button:active { background: #500; }
 
-/* Инвентарь и списки в меню */
-#inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; width: 100%; max-width: 600px; margin-bottom: 20px; }
+/* Элементы внутри меню */
+#menu-content { width: 100%; display: flex; flex-direction: column; align-items: center; }
+#inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; width: 100%; max-width: 500px; margin-bottom: 20px; }
 .inv-item { background: rgba(40,0,0,0.5); border: 1px solid #5a0000; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px; color: #f88; cursor: pointer; transition: 0.2s; }
 .inv-item:hover { background: rgba(80,0,0,0.7); border-color: #f00; }
 .inv-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-#journal-list, #ach-list, #records-list { width: 100%; max-width: 600px; text-align: left; margin-bottom: 20px; color: #bbb; max-height: 50vh; overflow-y: auto; padding-right: 10px; }
+#journal-list, #ach-list { width: 100%; max-width: 500px; text-align: left; margin-bottom: 20px; color: #bbb; max-height: 40vh; overflow-y: auto; padding-right: 5px; }
 .journal-item, .ach-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
 .journal-item b { color: #f44; font-size: 16px; }
 .ach-item.unlocked { color: #8f8; }
 
+/* ДЛЯ ПК: Чуть больше отступы */
 @media (min-width: 769px) {
   #ui { padding: 20px 50px; min-height: 30vh; }
   #text-box { font-size: 20px; }
   .choice-btn { max-width: 600px; }
+  #touch-controls { display: none; } /* Скрываем мобильные кнопки на ПК */
 }
 </style>
 </head>
 <body>
 <div id="game">
+  <!-- Графика -->
   <canvas id="scene"></canvas>
   <div id="darkness-mask"></div>
   <canvas id="weather"></canvas>
@@ -123,6 +132,7 @@ body {
   <div id="blood-overlay"></div>
   <div id="shake"></div>
   
+  <!-- HUD -->
   <div id="top-hud">
     <div id="stats">
       <span class="stat-badge">❤️ <span id="hp">100</span></span>
@@ -134,27 +144,33 @@ body {
     </div>
     <div id="minimap-box">
       <span>🗺️ Карта:</span>
-      <span id="minimap-loc">Где-то</span>
+      <span id="minimap-loc">Меню</span>
     </div>
   </div>
 
+  <!-- Основной текст и выборы -->
   <div id="ui">
-    <div id="text-box">Добро пожаловать...</div>
+    <div id="text-box">Добро пожаловать в Blood Horror...</div>
     <div id="choices"></div>
   </div>
 
+  <!-- Кнопки для телефона -->
   <div id="touch-controls">
     <button onclick="togglePauseMenu()">☰<span>МЕНЮ</span></button>
     <button onclick="useFlashlight()">🔦<span>СВЕТ</span></button>
     <button onclick="useWeapon()">🔪<span>НОЖ</span></button>
   </div>
 
+  <!-- Эффекты -->
   <div id="flash"></div>
   <div id="notify"></div>
   
+  <!-- ГЛАВНОЕ МЕНЮ (ЖЕСТКО В HTML) -->
   <div id="menu-overlay">
-    <h2 id="menu-title">МЕНЮ</h2>
-    <div id="menu-content" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;"></div>
+    <h2 id="menu-title">BLOOD HORROR</h2>
+    <div id="menu-content">
+      <!-- Содержимое будет генерироваться JS -->
+    </div>
   </div>
 </div>
 
@@ -168,14 +184,17 @@ const darkCanvas = document.getElementById('darkness-mask');
 const dctx = darkCanvas.getContext('2d');
 const textBox = document.getElementById('text-box');
 const choicesBox = document.getElementById('choices');
+const menuOverlay = document.getElementById('menu-overlay');
+const menuTitle = document.getElementById('menu-title');
+const menuContent = document.getElementById('menu-content');
 
 let state = { 
   scene: 'menu', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
-  difficulty: 'normal', weaponDurability: 3, karma: 0, location: 'Комната', currentFloor: 1,
+  difficulty: 'normal', weaponDurability: 3, karma: 0, location: 'Меню', currentFloor: 1,
   endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false,
   gameStarted: false
 };
-let soundOn = true, typeSpeed = 25, fontSize = 18;
+let soundOn = true, typeSpeed = 25;
 let drawInterval = null;
 
 function resize() {
@@ -406,14 +425,14 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v11',
+  key: 'bloodhorror_ultimate_v12',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
       weaponDurability: state.weaponDurability, karma: karma.value, endlessScore: state.endlessScore,
       sanity: sanity.value, inv: inventory.items, location: state.location, floor: state.currentFloor,
       stats: { deaths: stats.deaths, endings: stats.endings, playtime: stats.playtime },
-      sound: soundOn, typeSpeed, fontSize, colorblind: state.colorblind,
+      sound: soundOn, typeSpeed, colorblind: state.colorblind,
       journal: journal.notes, achievements: achievements.unlocked
     }));
   },
@@ -430,7 +449,7 @@ function loadState(d) {
   state.colorblind = d.colorblind || false;
   sanity.set(d.sanity ?? 100); inventory.items = d.inv || []; document.getElementById('inv-count').textContent = inventory.items.length;
   if (d.stats) { stats.deaths = d.stats.deaths || 0; stats.endings = d.stats.endings || []; stats.playtime = d.stats.playtime || 0; }
-  soundOn = d.sound ?? true; typeSpeed = d.typeSpeed ?? 25; fontSize = d.fontSize ?? 18;
+  soundOn = d.sound ?? true; typeSpeed = d.typeSpeed ?? 25;
   journal.notes = d.journal || []; achievements.unlocked = d.achievements || [];
   document.getElementById('hp').textContent = state.hp;
   document.getElementById('battery').textContent = Math.floor(state.battery);
@@ -468,19 +487,18 @@ function updateEnemyMultiplier() {
 
 // ========== МЕНЮ ==========
 function closeMenu() { 
-  document.getElementById('menu-overlay').classList.remove('active'); 
+  menuOverlay.classList.remove('active'); 
   if(state.gameStarted) state.paused = false; 
 }
 
 function renderMenu(type) {
-  const title = document.getElementById('menu-title'), content = document.getElementById('menu-content');
-  document.getElementById('menu-overlay').classList.add('active'); 
-  content.innerHTML = '';
+  menuOverlay.classList.add('active'); 
+  menuContent.innerHTML = '';
 
   if (type === 'main') {
-    title.textContent = 'BLOOD HORROR';
+    menuTitle.textContent = 'BLOOD HORROR';
     const hasSave = save.exists();
-    content.innerHTML = `
+    menuContent.innerHTML = `
       <button onclick="startNewGame()" style="background: #500;">Новая игра</button>
       ${hasSave ? `<button onclick="continueGame()">Продолжить</button>` : ''}
       <button onclick="renderMenu('settings')">Настройки</button>
@@ -489,8 +507,8 @@ function renderMenu(type) {
     `;
   } 
   else if (type === 'pause') {
-    title.textContent = 'ПАУЗА';
-    content.innerHTML = `
+    menuTitle.textContent = 'ПАУЗА';
+    menuContent.innerHTML = `
       <button onclick="closeMenu()">Продолжить</button>
       <button onclick="saveGame()">Сохранить</button>
       <button onclick="renderMenu('inventory')">Инвентарь</button>
@@ -500,25 +518,25 @@ function renderMenu(type) {
     `;
   }
   else if (type === 'inventory') {
-    title.textContent = 'ИНВЕНТАРЬ';
+    menuTitle.textContent = 'ИНВЕНТАРЬ';
     const grid = document.createElement('div'); grid.id = 'inventory-grid';
     inventory.items.forEach(item => {
       const div = document.createElement('div'); div.className = 'inv-item'; div.textContent = item;
       div.onclick = () => { useItem(item); renderMenu('inventory'); }; grid.appendChild(div);
     });
     if(inventory.items.length === 0) grid.innerHTML = '<p style="color:#666; width:100%; text-align:center;">Пусто</p>';
-    content.appendChild(grid);
-    content.innerHTML += `<div class="inv-actions"><button onclick="renderMenu('craft')">Крафт</button></div><button onclick="renderMenu('pause')">Назад</button>`;
+    menuContent.appendChild(grid);
+    menuContent.innerHTML += `<div class="inv-actions"><button onclick="renderMenu('craft')">Крафт</button></div><button onclick="renderMenu('pause')">Назад</button>`;
   } 
   else if (type === 'craft') {
-    title.textContent = 'КРАФТ';
-    content.innerHTML = `<div style="text-align:left; color:#aaa; margin-bottom:20px;"><p>Бинт + Таблетки = Аптечка</p><p>Нож + Камень = Заточенный нож</p></div>
-      <button onclick="if(inventory.craft('бинт','таблетки','аптечка')){achievements.unlock('crafter'); renderMenu('inventory');} else notify('Нет')">Аптечка</button>
+    menuTitle.textContent = 'КРАФТ';
+    menuContent.innerHTML = `<div style="text-align:left; color:#aaa; margin-bottom:20px; max-width:300px;"><p>Бинт + Таблетки = Аптечка</p><p>Нож + Камень = Заточенный нож</p></div>
+      <button onclick="if(inventory.craft('бинт','таблетки','аптечка')){achievements.unlock('crafter'); renderMenu('inventory');} else notify('Нет')">Создать аптечку</button>
       <button onclick="renderMenu('inventory')">Назад</button>`;
   } 
   else if (type === 'settings') {
-    title.textContent = 'НАСТРОЙКИ';
-    content.innerHTML = `
+    menuTitle.textContent = 'НАСТРОЙКИ';
+    menuContent.innerHTML = `
       <button onclick="soundOn=!soundOn; renderMenu('settings')">Звук: ${soundOn ? 'ВКЛ' : 'ВЫКЛ'}</button>
       <button onclick="typeSpeed = typeSpeed===25?50:25; renderMenu('settings')">Скорость: ${typeSpeed}мс</button>
       <button onclick="state.colorblind=!state.colorblind; sanity.set(sanity.value); renderMenu('settings')">Дальтонизм: ${state.colorblind ? 'ВКЛ' : 'ВЫКЛ'}</button>
@@ -526,23 +544,23 @@ function renderMenu(type) {
     `;
   } 
   else if (type === 'journal') {
-    title.textContent = 'ДНЕВНИК';
+    menuTitle.textContent = 'ДНЕВНИК';
     let html = ''; journal.notes.forEach(n => { html += `<div class="journal-item"><b>${n.title}</b><br>${n.text}</div>`; });
-    content.innerHTML = `<div id="journal-list">${html || '<p style="color:#666;">Пусто</p>'}</div><button onclick="renderMenu('pause')">Назад</button>`;
+    menuContent.innerHTML = `<div id="journal-list">${html || '<p style="color:#666;">Пусто</p>'}</div><button onclick="renderMenu('pause')">Назад</button>`;
   } 
   else if (type === 'achievements') {
-    title.textContent = 'ДОСТИЖЕНИЯ';
+    menuTitle.textContent = 'ДОСТИЖЕНИЯ';
     let html = ''; for (let id in achievements.defs) html += `<div class="ach-item ${achievements.unlocked.includes(id)?'unlocked':''}">${achievements.unlocked.includes(id)?'✅':'⬜'} ${achievements.defs[id]}</div>`;
-    content.innerHTML = `<div id="ach-list">${html}</div><button onclick="renderMenu(state.gameStarted?'pause':'main')">Назад</button>`;
+    menuContent.innerHTML = `<div id="ach-list">${html}</div><button onclick="renderMenu(state.gameStarted?'pause':'main')">Назад</button>`;
   }
   else if (type === 'about') {
-    title.textContent = 'ОБ ИГРЕ';
-    content.innerHTML = `
-      <div style="max-width:500px; text-align:left; color:#aaa; line-height:1.6; margin-bottom:20px;">
+    menuTitle.textContent = 'ОБ ИГРЕ';
+    menuContent.innerHTML = `
+      <div style="max-width:400px; text-align:left; color:#aaa; line-height:1.6; margin-bottom:20px;">
         <p><b>Blood Horror</b> — психологический хоррор, где вам предстоит выживать в темных коридорах, собирать записки и принимать сложные решения.</p>
         <p>Управление: кнопки выбора, фонарик (тратит заряд), оружие (тратит стамину).</p>
         <p>Собирайте записки, чтобы открыть истинную концовку!</p>
-        <p>Версия: Ultimate v11</p>
+        <p style="color:#666; font-size:12px; margin-top:20px;">Версия: Ultimate v12</p>
       </div>
       <button onclick="renderMenu('main')">Назад</button>
     `;
@@ -791,7 +809,6 @@ function loop(now) {
 requestAnimationFrame(loop);
 
 // ========== СТАРТ ==========
-// При загрузке страницы показываем главное меню
 renderMenu('main');
 audio.ambient();
 </script>
