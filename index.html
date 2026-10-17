@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Blood Horror: Ultimate</title>
+<title>Blood Horror: Ultimate Graphics</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
@@ -16,11 +16,11 @@ body {
 
 /* Слои графики */
 #scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
-#darkness-mask { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+#darkness-mask { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; transition: opacity 0.5s; }
 #weather { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
-#fog { position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 30%, rgba(100,0,0,0.15) 100%); animation: fogPulse 4s infinite alternate; }
-@keyframes fogPulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }
-#vignette { position: absolute; inset: 0; pointer-events: none; z-index: 5; background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.9) 100%); }
+#fog { position: absolute; inset: 0; pointer-events: none; z-index: 4; background: radial-gradient(circle, transparent 20%, rgba(80,0,0,0.3) 100%); animation: fogPulse 4s infinite alternate; }
+@keyframes fogPulse { 0% { opacity: 0.6; } 100% { opacity: 1; } }
+#vignette { position: absolute; inset: 0; pointer-events: none; z-index: 5; background: radial-gradient(circle, transparent 40%, rgba(0,0,0,1) 100%); }
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 6; }
 #blood-overlay.active { opacity: 1; }
 
@@ -38,7 +38,7 @@ body {
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
   padding: 20px 15px; z-index: 50;
-  background: linear-gradient(transparent, rgba(0,0,0,0.9) 30%, #000);
+  background: linear-gradient(transparent, rgba(0,0,0,0.95) 30%, #000);
   display: flex; flex-direction: column; justify-content: flex-end;
   min-height: 35vh; max-height: 70vh;
   pointer-events: none;
@@ -50,12 +50,13 @@ body {
 }
 #choices { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; width: 100%; }
 .choice-btn {
-  background: rgba(40, 0, 0, 0.95); border: 1px solid #7a0000; color: #fff;
+  background: rgba(30, 0, 0, 0.95); border: 1px solid #8a0000; color: #ddd;
   padding: 14px 16px; text-align: left; cursor: pointer;
   font-family: inherit; font-size: 16px; font-weight: bold;
-  transition: all 0.1s; border-radius: 6px; width: 100%;
+  transition: all 0.2s; border-radius: 6px; width: 100%;
+  box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
 }
-.choice-btn:hover { background: rgba(80, 0, 0, 1); border-color: #f00; box-shadow: 0 0 10px rgba(255,0,0,0.5); transform: translateX(5px); }
+.choice-btn:hover { background: rgba(70, 0, 0, 1); border-color: #f00; color: #fff; box-shadow: 0 0 15px rgba(255,0,0,0.4), inset 0 0 10px rgba(0,0,0,0.8); transform: translateX(5px); }
 .choice-btn:active { background: #a00; transform: scale(0.98); }
 
 /* Верхний HUD */
@@ -63,7 +64,7 @@ body {
   position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; flex-wrap: wrap; gap: 10px;
 }
 #stats, #minimap-box { display: flex; gap: 6px; font-size: 13px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
-.stat-badge { background: rgba(20,0,0,0.9); padding: 5px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 4px; }
+.stat-badge { background: rgba(15,0,0,0.9); padding: 5px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 4px; box-shadow: 0 0 5px #000; }
 #minimap-box { background: rgba(0,0,0,0.9); border: 1px solid #333; padding: 5px 8px; font-size: 12px; color: #aaa; flex-direction: column; text-align: right; }
 
 /* Эффекты */
@@ -71,26 +72,27 @@ body {
 #flash.active { opacity: 1; }
 #shake { position: fixed; inset: 0; pointer-events: none; z-index: 49; }
 #shake.active { animation: shake 0.3s infinite; }
-@keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-4px,3px); } 50% { transform: translate(3px,-4px); } 75% { transform: translate(-3px,-2px); } }
+@keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-5px,4px); } 50% { transform: translate(4px,-5px); } 75% { transform: translate(-4px,-3px); } }
 
 #notify {
   position: fixed; top: 80px; right: 10px;
-  background: rgba(60,0,0,0.95); border: 1px solid #a00;
+  background: rgba(50,0,0,0.95); border: 1px solid #a00;
   padding: 10px 16px; color: #fff; font-size: 14px;
   opacity: 0; transition: opacity 0.3s; pointer-events: none;
   max-width: 80vw; border-radius: 6px; z-index: 120;
+  box-shadow: 0 0 15px rgba(255,0,0,0.3);
 }
 #notify.active { opacity: 1; }
 
 /* Кнопки управления */
 #touch-controls { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 10px; z-index: 70; }
 #touch-controls button {
-  background: rgba(60,0,0,0.9); border: 2px solid #a00; color: #fff;
+  background: rgba(40,0,0,0.9); border: 2px solid #a00; color: #fff;
   width: 60px; height: 60px; border-radius: 50%; font-size: 20px; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  box-shadow: 0 0 10px rgba(0,0,0,0.8); transition: 0.2s;
+  box-shadow: 0 0 10px rgba(0,0,0,0.8), inset 0 0 10px rgba(255,0,0,0.2); transition: 0.2s;
 }
-#touch-controls button:hover { background: #a00; }
+#touch-controls button:hover { background: #a00; box-shadow: 0 0 20px rgba(255,0,0,0.6); }
 #touch-controls button span { font-size: 9px; margin-top: 2px; }
 
 /* МЕНЮ ПАУЗЫ */
@@ -101,39 +103,54 @@ body {
   z-index: 500; padding: 20px; overflow-y: auto;
 }
 #menu-overlay.active { display: flex; }
-#menu-overlay h2 { color: #f00; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 15px #f00; text-align: center; }
+#menu-overlay h2 { color: #f00; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 15px #f00; text-align: center; letter-spacing: 3px; }
 #menu-overlay button {
   background: #1a0000; border: 1px solid #5a0000; color: #ccc;
   padding: 14px 32px; cursor: pointer; font-family: inherit; font-size: 16px;
-  width: 100%; max-width: 300px; border-radius: 6px; transition: background 0.2s; 
+  width: 100%; max-width: 300px; border-radius: 6px; transition: all 0.2s; 
+  box-shadow: inset 0 0 10px #000;
 }
-#menu-overlay button:hover { background: #3a0000; color: #fff; border-color: #a00; }
+#menu-overlay button:hover { background: #3a0000; color: #fff; border-color: #a00; box-shadow: 0 0 10px #a00, inset 0 0 10px #000; }
 #menu-overlay button:active { background: #500; }
+
+/* Фальшивое окно */
+#fake-window {
+  position: fixed; top: 30%; left: 20%; right: 20%;
+  background: #111; border: 2px solid #555; padding: 20px;
+  display: none; flex-direction: column; align-items: center; gap: 15px;
+  z-index: 800; box-shadow: 0 0 40px rgba(0,0,0,1);
+}
+#fake-window.active { display: flex; }
+#fake-window p { font-size: 18px; text-align: center; color: #fff; margin-bottom: 10px; text-shadow: 0 0 5px #000; }
+#fake-window .btn-row { display: flex; gap: 10px; }
+#fake-window button { padding: 10px 20px; background: #333; color: #fff; border: 1px solid #666; cursor: pointer; font-family: inherit; font-size: 16px; }
+#fake-window button:hover { background: #555; }
 
 /* Элементы внутри меню */
 #menu-content { width: 100%; display: flex; flex-direction: column; align-items: center; }
 #inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; width: 100%; max-width: 500px; margin-bottom: 20px; }
-.inv-item { background: rgba(40,0,0,0.5); border: 1px solid #5a0000; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px; color: #f88; cursor: pointer; transition: 0.2s; }
-.inv-item:hover { background: rgba(80,0,0,0.7); border-color: #f00; }
+.inv-item { background: rgba(40,0,0,0.7); border: 1px solid #5a0000; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px; color: #f88; cursor: pointer; transition: 0.2s; box-shadow: inset 0 0 5px #000; }
+.inv-item:hover { background: rgba(80,0,0,0.9); border-color: #f00; color: #fff; }
 .inv-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
 #journal-list, #ach-list { width: 100%; max-width: 500px; text-align: left; margin-bottom: 20px; color: #bbb; max-height: 40vh; overflow-y: auto; padding-right: 5px; }
 .journal-item, .ach-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
-.journal-item b { color: #f44; font-size: 16px; }
-.ach-item.unlocked { color: #8f8; }
+.journal-item b { color: #f44; font-size: 16px; text-shadow: 0 0 5px #f00; }
+.ach-item.unlocked { color: #8f8; text-shadow: 0 0 5px #0f0; }
 
 /* Экран старта */
 #start-screen {
   position: fixed; inset: 0; background: #000; z-index: 999;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: radial-gradient(circle at center, #1a0000 0%, #000 100%);
 }
-#start-screen h1 { color: #f00; font-size: 36px; text-shadow: 0 0 20px #f00; margin-bottom: 30px; text-align: center; }
+#start-screen h1 { color: #f00; font-size: 42px; text-shadow: 0 0 20px #f00, 0 0 10px #f00; margin-bottom: 40px; text-align: center; letter-spacing: 5px; }
 #start-screen button {
-  background: #500; border: 2px solid #f00; color: #fff;
-  padding: 15px 40px; font-size: 20px; font-family: inherit;
-  cursor: pointer; border-radius: 8px; text-transform: uppercase;
-  box-shadow: 0 0 15px rgba(255,0,0,0.5); transition: 0.3s;
+  background: #400; border: 2px solid #f00; color: #fff;
+  padding: 15px 50px; font-size: 22px; font-family: inherit; font-weight: bold;
+  cursor: pointer; border-radius: 4px; text-transform: uppercase; letter-spacing: 2px;
+  box-shadow: 0 0 20px rgba(255,0,0,0.4), inset 0 0 10px rgba(255,0,0,0.2); transition: 0.3s;
 }
-#start-screen button:hover { background: #a00; box-shadow: 0 0 30px rgba(255,0,0,0.8); }
+#start-screen button:hover { background: #800; box-shadow: 0 0 40px rgba(255,0,0,0.8), inset 0 0 20px rgba(255,0,0,0.4); transform: scale(1.05); }
 
 @media (min-width: 769px) {
   #ui { padding: 20px 50px; min-height: 30vh; }
@@ -182,6 +199,14 @@ body {
   <div id="flash"></div>
   <div id="notify"></div>
   
+  <div id="fake-window">
+    <p id="fake-window-text">Ты уверен?</p>
+    <div class="btn-row">
+      <button onclick="closeFakeWindow(true)">Да</button>
+      <button onclick="closeFakeWindow(false)" id="fake-no-btn">Нет</button>
+    </div>
+  </div>
+
   <div id="menu-overlay">
     <h2 id="menu-title">ПАУЗА</h2>
     <div id="menu-content"></div>
@@ -212,6 +237,7 @@ const audio = {
   creak() { this.tone(120, 0.6, 'sawtooth', 0.06); },
   scream() { this.tone(400, 0.8, 'sawtooth', 0.15); setTimeout(() => this.tone(300, 0.6, 'square', 0.1), 100); },
   heartbeat() { this.tone(60, 0.15, 'sine', 0.2); setTimeout(() => this.tone(50, 0.15, 'sine', 0.15), 200); },
+  breath() { this.tone(100, 1.5, 'triangle', 0.05); },
   ambient() { 
     if (!soundOn) return;
     const theme = state.scene === 'basement' ? 45 : state.scene === 'corridor' ? 55 : 40;
@@ -243,11 +269,13 @@ let state = {
   scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
   difficulty: 'normal', weaponDurability: 3, karma: 0, location: 'Комната', currentFloor: 1,
   endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false,
-  savedSurvivor: false // Флаг сюжета: спасли ли выжившего
+  savedSurvivor: false
 };
 let soundOn = true, typeSpeed = 25;
 let drawInterval = null;
 let gameLoopRunning = false;
+let idleTimer = 0;
+let isIdle = false;
 
 function resize() {
   canvas.width = innerWidth; canvas.height = innerHeight;
@@ -263,27 +291,53 @@ function notify(msg) {
   if (navigator.vibrate) navigator.vibrate(50);
 }
 
+// ========== ФАЛЬШИВОЕ ОКНО ==========
+function triggerFakeWindow() {
+  const win = document.getElementById('fake-window');
+  const txt = document.getElementById('fake-window-text');
+  const noBtn = document.getElementById('fake-no-btn');
+  
+  const texts = ["Ты уверен, что хочешь продолжить?", "Оно смотрит на тебя", "Выйти из игры?", "Это не сон.", "Беги."];
+  txt.textContent = texts[Math.floor(Math.random()*texts.length)];
+  
+  win.classList.add('active');
+  audio.echo();
+  
+  noBtn.style.position = 'relative';
+  noBtn.onmouseover = () => {
+    noBtn.style.left = (Math.random() * 100 - 50) + 'px';
+    noBtn.style.top = (Math.random() * 50 - 25) + 'px';
+  };
+}
+function closeFakeWindow(wasYes) {
+  document.getElementById('fake-window').classList.remove('active');
+  document.getElementById('fake-no-btn').style.left = '0px';
+  document.getElementById('fake-no-btn').style.top = '0px';
+  
+  if (wasYes) {
+    sanity.decrease(15); audio.scream(); flash.trigger('#f00');
+    notify("Ты чувствуешь, как что-то коснулось твоей спины...");
+  }
+}
+
 // ========== СЛУЧАЙНЫЕ СОБЫТИЯ ==========
 const randomEvents = {
   trigger() {
-    // 20% шанс на случайное событие при переходе
     if (Math.random() > 0.2) return false;
-
     const events = [
-      { text: "Внезапно свет мигает, и ты слышишь шёпот за спиной...", type: 'scare' },
+      { text: "Свет мигает, ты слышишь шёпот за спиной...", type: 'scare' },
       { text: "На полу лежит окровавленный бинт. Ты подбираешь его.", type: 'item_bandage' },
       { text: "Из темноты доносится детский плач. Рассудок падает.", type: 'sanity' },
       { text: "Ты находишь старую батарейку. Заряд фонарика восстановлен.", type: 'battery' },
-      { text: "Стены покрываются кровавыми надписями: 'БЕГИ'.", type: 'scare' }
+      { text: "Стены покрываются кровавыми надписями: 'БЕГИ'.", type: 'scare' },
+      { text: "Система зависла... (Оно играет с тобой)", type: 'fake_window' }
     ];
-
     const ev = events[Math.floor(Math.random() * events.length)];
-    
     if (ev.type === 'scare') { audio.scream(); sanity.decrease(10); flash.trigger('#ff0000'); }
     if (ev.type === 'item_bandage') { inventory.add('бинт'); }
     if (ev.type === 'sanity') { audio.echo(); sanity.decrease(15); }
     if (ev.type === 'battery') { state.battery = Math.min(100, state.battery + 30); document.getElementById('battery').textContent = Math.floor(state.battery); }
-
+    if (ev.type === 'fake_window') { setTimeout(triggerFakeWindow, 500); }
     notify("⚠️ " + ev.text);
     return true;
   }
@@ -301,8 +355,14 @@ const gore = {
     this.particles = this.particles.filter(p => { p.x+=p.vx; p.y+=p.vy; p.vy+=0.4; p.life--; return p.life>0; });
   },
   draw() {
-    this.puddles.forEach(p => { ctx.fillStyle = `rgba(150,0,0,${p.alpha})`; ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r*0.3, 0, 0, Math.PI*2); ctx.fill(); });
-    this.particles.forEach(p => { ctx.fillStyle = `rgba(220,0,0,${Math.min(1, p.life/60)})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
+    this.puddles.forEach(p => { 
+        ctx.fillStyle = `rgba(120,0,0,${p.alpha})`; 
+        ctx.beginPath(); ctx.ellipse(p.x, p.y, p.r, p.r*0.3, 0, 0, Math.PI*2); ctx.fill(); 
+        // Блик на луже
+        ctx.fillStyle = `rgba(200,50,50,${p.alpha * 0.5})`;
+        ctx.beginPath(); ctx.ellipse(p.x - p.r*0.2, p.y - p.r*0.05, p.r*0.3, p.r*0.1, 0, 0, Math.PI*2); ctx.fill();
+    });
+    this.particles.forEach(p => { ctx.fillStyle = `rgba(200,0,0,${Math.min(1, p.life/60)})`; ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill(); });
   }
 };
 
@@ -315,15 +375,15 @@ const weather = {
   rainDrops: [],
   update() {
     if (state.location === 'Крыша' || state.scene === 'roof') {
-      if (this.rainDrops.length < 150) this.rainDrops.push({x: Math.random()*innerWidth, y: 0, speed: 15+Math.random()*15});
+      if (this.rainDrops.length < 200) this.rainDrops.push({x: Math.random()*innerWidth, y: 0, speed: 20+Math.random()*20});
       this.rainDrops.forEach((d, i) => { d.y += d.speed; if (d.y > innerHeight) this.rainDrops.splice(i, 1); });
     } else {
       this.rainDrops = [];
     }
     wctx.clearRect(0,0,innerWidth,innerHeight);
-    wctx.strokeStyle = 'rgba(150,150,255,0.3)';
-    wctx.lineWidth = 2;
-    this.rainDrops.forEach(d => { wctx.beginPath(); wctx.moveTo(d.x, d.y); wctx.lineTo(d.x, d.y+20); wctx.stroke(); });
+    wctx.strokeStyle = 'rgba(150,150,200,0.3)';
+    wctx.lineWidth = 1.5;
+    this.rainDrops.forEach(d => { wctx.beginPath(); wctx.moveTo(d.x, d.y); wctx.lineTo(d.x-5, d.y+25); wctx.stroke(); });
   }
 };
 
@@ -357,19 +417,14 @@ const batterySystem = {
   }
 };
 
-const karma = {
-  value: 0,
-  add(n) { this.value += n; document.getElementById('karma').textContent = this.value; }
-};
+const karma = { value: 0, add(n) { this.value += n; document.getElementById('karma').textContent = this.value; } };
 
 function useFlashlight() { if(state.paused) return; state.flashlightOn = !state.flashlightOn; notify(state.flashlightOn ? 'Фонарик ВКЛ' : 'Фонарик ВЫКЛ'); }
 
 function updateBloodOverlay() {
   const b = document.getElementById('blood-overlay');
-  if (state.hp < 40) {
-    b.classList.add('active');
-    b.style.background = `radial-gradient(circle, transparent 20%, rgba(150,0,0,${(40-state.hp)/60}) 100%)`;
-  } else b.classList.remove('active');
+  if (state.hp < 40) { b.classList.add('active'); b.style.background = `radial-gradient(circle, transparent 20%, rgba(150,0,0,${(40-state.hp)/60}) 100%)`; } 
+  else b.classList.remove('active');
 }
 
 // ========== ИНВЕНТАРЬ ==========
@@ -387,12 +442,8 @@ function useWeapon() {
   let weapon = inventory.has('топор') ? 'топор' : inventory.has('труба') ? 'труба' : inventory.has('нож') ? 'нож' : null;
   if (!weapon) { notify('Нет оружия'); return; }
   if (staminaSys.value < 20) { notify('Нет сил для удара!'); return; }
-  
-  staminaSys.drain(20);
-  state.weaponDurability--;
-  audio.hit(); 
-  notify(`Удар ${weapon}! Прочность: ${state.weaponDurability}`);
-  
+  staminaSys.drain(20); state.weaponDurability--;
+  audio.hit(); notify(`Удар ${weapon}! Прочность: ${state.weaponDurability}`);
   if (state.weaponDurability <= 0) { notify('Оружие сломалось!'); inventory.remove(weapon); }
   if (enemy.active) { enemy.stop(); notify('Враг отступил!'); }
 }
@@ -420,7 +471,7 @@ const enemy = {
 };
 
 const echo = {
-  active: false, timer: null, messages: ['обернись','я здесь','не отвечай'],
+  active: false, timer: null, messages: ['обернись','я здесь','не отвечай', 'это не твой голос'],
   start() { this.active = true; this.tick(); },
   stop() { this.active = false; clearTimeout(this.timer); },
   tick() {
@@ -467,7 +518,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v18',
+  key: 'bloodhorror_ultimate_v20',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -583,112 +634,198 @@ document.addEventListener('keydown', e => {
 });
 
 // ========== СЦЕНЫ / РЕНДЕР ==========
-function showText(t) { typewriter.write(t); }
+function showText(t) { 
+  if (sanity.value < 50 && Math.random() < 0.3) {
+    const words = t.split(' ');
+    const insertIndex = Math.floor(Math.random() * words.length);
+    words.splice(insertIndex, 0, '<span style="color:#f00; font-weight:bold; text-shadow:0 0 5px #f00;">ОБЕРНИСЬ.</span>');
+    t = words.join(' ');
+    
+    clearInterval(typewriter.timer); textBox.innerHTML = ''; let i = 0;
+    typewriter.timer = setInterval(() => {
+      if (i < t.length) {
+          if (t[i] === '<') { const end = t.indexOf('>', i); textBox.innerHTML += t.substring(i, end + 1); i = end + 1; } 
+          else { textBox.innerHTML += t[i]; i++; }
+      } else { clearInterval(typewriter.timer); }
+    }, typeSpeed);
+  } else { typewriter.write(t); }
+}
 function showChoices(list) { 
   choicesBox.innerHTML = ''; 
   list.forEach(c => { 
     const b = document.createElement('button'); 
     b.className = 'choice-btn'; 
     b.textContent = c.label; 
-    b.onclick = c.action; 
+    b.onclick = () => { idleTimer = 0; isIdle = false; c.action(); }; 
     choicesBox.appendChild(b); 
   }); 
 }
 function clearChoices() { choicesBox.innerHTML = ''; }
 
-// Отрисовка сцен (Улучшенная графика)
+// ========== УЛУЧШЕННАЯ ГРАФИКА (ПРОЦЕДУРНЫЕ ТЕКСТУРЫ) ==========
 function renderBackground(sceneId) {
   if (drawInterval) clearInterval(drawInterval);
-  const colors = { start: '#2a2a2a', look_around: '#2a2a2a', corner: '#3a1010', door: '#202530', corridor: '#151520', basement: '#2a0505', attic: '#252010', morgue: '#0a1a1a', floor2: '#202025', roof: '#101525', default: '#222', endless: '#300000' };
+  
+  // Базовые цвета для локаций
+  const colors = { 
+    start: '#2a2520', look_around: '#2a2520', corner: '#3a1010', door: '#1a1a22', 
+    corridor: '#101015', basement: '#200808', floor2: '#1a1a20', roof: '#0a0d18', 
+    default: '#151515', endless: '#250000' 
+  };
   const bgCol = colors[sceneId] || colors.default;
 
   const drawFrame = () => {
+    // 1. Базовый фон
     ctx.fillStyle = bgCol; ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Пол
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height); ctx.lineTo(0, canvas.height); ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)'; ctx.lineWidth = 1;
-    for (let i = 0; i < canvas.width; i += 40) { ctx.beginPath(); ctx.moveTo(i, canvas.height * 0.6); ctx.lineTo(i - 50, canvas.height); ctx.stroke(); }
+    // 2. ПОЛ (Деревянные доски)
+    const floorY = canvas.height * 0.6;
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.lineTo(canvas.width, canvas.height); ctx.lineTo(0, canvas.height); ctx.fill();
+    
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)'; ctx.lineWidth = 2;
+    for (let i = -canvas.width; i < canvas.width * 2; i += 60) {
+      ctx.beginPath(); 
+      ctx.moveTo(canvas.width/2 + i * 0.2, floorY); 
+      ctx.lineTo(canvas.width/2 + i * 1.5, canvas.height); 
+      ctx.stroke();
+    }
+    // Горизонтальные стыки досок
+    for (let i = 1; i <= 5; i++) {
+        let y = floorY + (canvas.height - floorY) * (i/5);
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
 
-    // Стены
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(canvas.width * 0.2, canvas.height * 0.4); ctx.lineTo(canvas.width * 0.2, canvas.height * 0.6); ctx.lineTo(0, canvas.height * 0.6); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(canvas.width, 0); ctx.lineTo(canvas.width * 0.8, canvas.height * 0.4); ctx.lineTo(canvas.width * 0.8, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height * 0.6); ctx.fill();
+    // 3. СТЕНЫ (Обои)
+    const wallTop = canvas.height * 0.3;
+    const wallBottom = floorY;
+    // Левая стена
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(canvas.width * 0.2, wallTop); ctx.lineTo(canvas.width * 0.2, wallBottom); ctx.lineTo(0, floorY); ctx.fill();
+    // Правая стена
+    ctx.beginPath(); ctx.moveTo(canvas.width, 0); ctx.lineTo(canvas.width * 0.8, wallTop); ctx.lineTo(canvas.width * 0.8, wallBottom); ctx.lineTo(canvas.width, floorY); ctx.fill();
     
     // Задняя стена
-    ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.fillRect(canvas.width * 0.2, canvas.height * 0.3, canvas.width * 0.6, canvas.height * 0.3);
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; 
+    ctx.fillRect(canvas.width * 0.2, wallTop, canvas.width * 0.6, wallBottom - wallTop);
     
-    // --- ДЕТАЛИ ЛОКАЦИЙ ---
+    // Узор на обоях
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    for (let x = canvas.width * 0.2; x < canvas.width * 0.8; x += 40) {
+        for (let y = wallTop; y < wallBottom; y += 40) {
+            ctx.beginPath(); ctx.arc(x + 20, y + 20, 5, 0, Math.PI*2); ctx.fill();
+        }
+    }
+
+    // 4. ДЕТАЛИ ОКРУЖЕНИЯ
     if (sceneId === 'start' || sceneId === 'look_around') {
-        // Окно
-        ctx.fillStyle = '#0a1520'; ctx.fillRect(canvas.width * 0.7, canvas.height * 0.35, canvas.width * 0.15, canvas.height * 0.2);
-        ctx.strokeStyle = '#444'; ctx.lineWidth = 4; ctx.strokeRect(canvas.width * 0.7, canvas.height * 0.35, canvas.width * 0.15, canvas.height * 0.2);
-        ctx.beginPath(); ctx.moveTo(canvas.width * 0.775, canvas.height * 0.35); ctx.lineTo(canvas.width * 0.775, canvas.height * 0.55); ctx.stroke();
-        // Дверь
-        ctx.fillStyle = '#151515'; ctx.fillRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 5; ctx.strokeRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
+        // Окно (Ночное небо)
+        const wx = canvas.width * 0.7, wy = wallTop + 40, ww = canvas.width * 0.15, wh = canvas.height * 0.2;
+        ctx.fillStyle = '#050a15'; ctx.fillRect(wx, wy, ww, wh);
+        // Луна
+        ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.arc(wx + ww*0.7, wy + wh*0.3, 15, 0, Math.PI*2); ctx.fill();
+        // Рамы
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 6; ctx.strokeRect(wx, wy, ww, wh);
+        ctx.beginPath(); ctx.moveTo(wx + ww/2, wy); ctx.lineTo(wx + ww/2, wy + wh); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(wx, wy + wh/2); ctx.lineTo(wx + ww, wy + wh/2); ctx.stroke();
+
+        // Дверь (Деревянная)
+        const dx = canvas.width * 0.4, dy = wallTop + 20, dw = canvas.width * 0.2, dh = wallBottom - dy;
+        ctx.fillStyle = '#2a1a10'; ctx.fillRect(dx, dy, dw, dh);
+        // Филенки (вставки) на двери
+        ctx.strokeStyle = '#150a05'; ctx.lineWidth = 3;
+        ctx.strokeRect(dx + 10, dy + 10, dw - 20, dh*0.4);
+        ctx.strokeRect(dx + 10, dy + dh*0.5, dw - 20, dh*0.4);
         // Ручка
-        ctx.fillStyle = '#666'; ctx.beginPath(); ctx.arc(canvas.width * 0.58, canvas.height * 0.52, 5, 0, Math.PI*2); ctx.fill();
-    } 
-    else if (sceneId === 'corridor') {
+        ctx.fillStyle = '#8a7a5a'; ctx.beginPath(); ctx.arc(dx + dw - 15, dy + dh*0.5, 6, 0, Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#000'; ctx.stroke();
+
+    } else if (sceneId === 'corridor') {
         // Мигающая лампа
         if (Math.random() > 0.1) {
-            ctx.fillStyle = 'rgba(200, 200, 150, 0.2)';
-            ctx.beginPath(); ctx.arc(canvas.width/2, 0, 200, 0, Math.PI); ctx.fill();
+            const lightGrad = ctx.createRadialGradient(canvas.width/2, wallTop, 10, canvas.width/2, wallTop, canvas.width*0.5);
+            lightGrad.addColorStop(0, 'rgba(200,200,150,0.4)');
+            lightGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = lightGrad; ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
-        // Отпечатки
-        ctx.fillStyle = 'rgba(100,0,0,0.4)';
-        ctx.fillRect(canvas.width * 0.3, canvas.height * 0.45, 20, 30);
-        ctx.fillRect(canvas.width * 0.65, canvas.height * 0.4, 20, 30);
-    }
-    else if (sceneId === 'basement') {
+        // Кровавые подтеки на стене
+        ctx.fillStyle = 'rgba(100,0,0,0.6)';
+        for(let i=0; i<5; i++) {
+            let sx = canvas.width * 0.2 + Math.random() * canvas.width * 0.6;
+            let sy = wallTop + Math.random() * 50;
+            ctx.fillRect(sx, sy, 2 + Math.random()*3, 50 + Math.random()*100);
+            ctx.beginPath(); ctx.arc(sx+2, sy, 4, 0, Math.PI*2); ctx.fill();
+        }
+    } else if (sceneId === 'basement') {
         // Трубы
-        ctx.strokeStyle = '#555'; ctx.lineWidth = 8;
-        ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.2); ctx.lineTo(canvas.width, canvas.height * 0.25); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(canvas.width * 0.3, 0); ctx.lineTo(canvas.width * 0.3, canvas.height * 0.3); ctx.stroke();
-        // Капли крови с труб
-        ctx.fillStyle = 'red';
-        ctx.beginPath(); ctx.arc(canvas.width * 0.5, canvas.height * 0.3, 3, 0, Math.PI*2); ctx.fill();
-        ctx.beginPath(); ctx.arc(canvas.width * 0.5, canvas.height * 0.35, 2, 0, Math.PI*2); ctx.fill();
-    }
-    else if (sceneId === 'floor2') {
+        ctx.strokeStyle = '#333'; ctx.lineWidth = 12;
+        ctx.beginPath(); ctx.moveTo(0, wallTop+20); ctx.lineTo(canvas.width, wallTop+20); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(canvas.width * 0.3, 0); ctx.lineTo(canvas.width * 0.3, wallTop+20); ctx.stroke();
+        // Вентиль
+        ctx.fillStyle = '#555'; ctx.beginPath(); ctx.arc(canvas.width * 0.3, wallTop+20, 15, 0, Math.PI*2); ctx.fill();
+        // Кровь с трубы
+        ctx.fillStyle = '#700';
+        ctx.beginPath(); ctx.arc(canvas.width * 0.6, wallTop+25, 3, 0, Math.PI*2); ctx.fill();
+        ctx.fillRect(canvas.width * 0.6 - 1, wallTop+25, 2, 80);
+
+    } else if (sceneId === 'floor2') {
         // Колыбель
-        ctx.strokeStyle = '#444'; ctx.lineWidth = 6;
-        ctx.strokeRect(canvas.width * 0.6, canvas.height * 0.5, canvas.width * 0.2, canvas.height * 0.15);
-        // Игрушки
-        ctx.fillStyle = '#700'; ctx.beginPath(); ctx.arc(canvas.width * 0.65, canvas.height * 0.55, 15, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#050'; ctx.beginPath(); ctx.arc(canvas.width * 0.75, canvas.height * 0.58, 10, 0, Math.PI*2); ctx.fill();
-    }
-    else if (sceneId === 'roof') {
-        // Город
-        ctx.fillStyle = '#050510'; ctx.fillRect(0, canvas.height * 0.6, canvas.width, canvas.height * 0.4);
-        // Молния
-        if (Math.random() < 0.02) { flash.trigger('#aaa'); audio.creak(); }
+        const cx = canvas.width * 0.65, cy = wallBottom - 40, cw = canvas.width * 0.2, ch = 60;
+        ctx.strokeStyle = '#332211'; ctx.lineWidth = 6;
+        // Ножки
+        ctx.beginPath(); ctx.moveTo(cx, cy+ch); ctx.lineTo(cx+10, cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx+cw, cy+ch); ctx.lineTo(cx+cw-10, cy); ctx.stroke();
+        // Корпус
+        ctx.strokeRect(cx+5, cy, cw-10, 30);
+        // Матрас
+        ctx.fillStyle = '#600'; ctx.fillRect(cx+10, cy+5, cw-20, 20);
         // Перила
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(0, canvas.height * 0.6); ctx.lineTo(canvas.width, canvas.height * 0.6); ctx.stroke();
-        for(let i=0; i<canvas.width; i+=40) { ctx.beginPath(); ctx.moveTo(i, canvas.height*0.6); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+        for (let i=10; i<cw-10; i+=15) { ctx.beginPath(); ctx.moveTo(cx+i, cy); ctx.lineTo(cx+i, cy-30); ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(cx+5, cy-30); ctx.lineTo(cx+cw-5, cy-30); ctx.stroke();
+
+    } else if (sceneId === 'roof') {
+        // Город внизу
+        ctx.fillStyle = '#020205'; ctx.fillRect(0, floorY, canvas.width, canvas.height - floorY);
+        // Огни города
+        ctx.fillStyle = 'rgba(255, 200, 100, 0.4)';
+        for(let i=0; i<30; i++) {
+            ctx.fillRect(Math.random() * canvas.width, floorY + Math.random() * (canvas.height - floorY), 3, 3);
+        }
+        // Перила
+        ctx.strokeStyle = '#222'; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(0, floorY); ctx.lineTo(canvas.width, floorY); ctx.stroke();
+        for(let i=0; i<canvas.width; i+=50) { ctx.beginPath(); ctx.moveTo(i, floorY); ctx.lineTo(i, canvas.height); ctx.stroke(); }
+        ctx.beginPath(); ctx.moveTo(0, floorY+50); ctx.lineTo(canvas.width, floorY+50); ctx.stroke();
     }
     else {
-        // Дверь по умолчанию
-        ctx.fillStyle = '#151515'; ctx.fillRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
-        ctx.strokeStyle = '#333'; ctx.lineWidth = 5; ctx.strokeRect(canvas.width * 0.4, canvas.height * 0.35, canvas.width * 0.2, canvas.height * 0.35);
+        // Стандартная дверь
+        const dx = canvas.width * 0.4, dy = wallTop + 20, dw = canvas.width * 0.2, dh = wallBottom - dy;
+        ctx.fillStyle = '#2a1a10'; ctx.fillRect(dx, dy, dw, dh);
+        ctx.strokeStyle = '#150a05'; ctx.lineWidth = 3;
+        ctx.strokeRect(dx + 10, dy + 10, dw - 20, dh*0.4);
+        ctx.strokeRect(dx + 10, dy + dh*0.5, dw - 20, dh*0.4);
     }
 
     gore.draw();
 
-    // Тьма и Фонарик
+    // 5. ТЬМА И СВЕТ
     dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
-    let baseDarkness = 0.4; if (['start', 'safe'].includes(sceneId)) baseDarkness = 0.1;
-    dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
+    let baseDarkness = 0.65; // Темнее, чтобы фонарик был нужен
+    if (['start', 'safe'].includes(sceneId)) baseDarkness = 0.3; // Чуть светлее
+    
+    dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; 
+    dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
     
     if (state.flashlightOn) {
       const cx = darkCanvas.width / 2, cy = darkCanvas.height / 2;
-      const grad = dctx.createRadialGradient(cx, cy, 50, cx, cy, Math.max(canvas.width, canvas.height) * 0.7);
-      grad.addColorStop(0, 'rgba(0,0,0,0)'); grad.addColorStop(0.5, 'rgba(0,0,0,0.1)'); grad.addColorStop(1, `rgba(0,0,0,${baseDarkness})`);
-      dctx.globalCompositeOperation = 'destination-out'; dctx.fillStyle = grad;
-      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height); dctx.globalCompositeOperation = 'source-over';
+      const grad = dctx.createRadialGradient(cx, cy, 50, cx, cy, Math.max(canvas.width, canvas.height) * 0.6);
+      grad.addColorStop(0, 'rgba(0,0,0,0)'); 
+      grad.addColorStop(0.4, 'rgba(0,0,0,0.3)'); 
+      grad.addColorStop(1, `rgba(0,0,0,${baseDarkness})`);
+      dctx.globalCompositeOperation = 'destination-out'; 
+      dctx.fillStyle = grad;
+      dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height); 
+      dctx.globalCompositeOperation = 'source-over';
     }
     
     weather.update();
@@ -700,16 +837,13 @@ function renderBackground(sceneId) {
 function goTo(name) { 
     if (scenes[name]) { 
         state.scene = name; 
-        
         const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь' };
         if (locNames[name]) {
-            transText.textContent = locNames[name];
-            transText.classList.add('show');
+            transText.textContent = locNames[name]; transText.classList.add('show');
             setTimeout(() => transText.classList.remove('show'), 1000);
         }
-
         scenes[name](); 
-        randomEvents.trigger(); // Вызов случайного события
+        randomEvents.trigger(); 
         save.save(); 
     } 
 }
@@ -784,9 +918,7 @@ const scenes = {
       ]);
     } else {
       showText('Ты снова встретил выжившего. Он благодарен тебе. "Я нашел кое-что для тебя, держи".');
-      showChoices([
-        { label: 'Взять подарок (Аптечка)', action: () => { inventory.add('аптечка'); notify('Выживший дал аптечку'); goTo('safe'); } }
-      ]);
+      showChoices([{ label: 'Взять подарок (Аптечка)', action: () => { inventory.add('аптечка'); notify('Выживший дал аптечку'); goTo('safe'); } }]);
     }
   },
   survivor_camp: () => {
@@ -900,6 +1032,20 @@ function loop(now) {
     batterySystem.drain();
     staminaSys.regen();
     updateBloodOverlay();
+
+    if (document.getElementById('fake-window').classList.contains('active')) {
+       // Таймер стоит
+    } else if (!enemy.active) {
+       idleTimer += dt;
+       if (idleTimer > 15 && !isIdle) {
+           isIdle = true;
+           audio.breath();
+           notify("Ты слышишь тяжелое дыхание за спиной...");
+           darkCanvas.style.opacity = 1; 
+           setTimeout(() => darkCanvas.style.opacity = 0, 2000);
+           sanity.decrease(5);
+       }
+    }
   }
   requestAnimationFrame(loop);
 }
