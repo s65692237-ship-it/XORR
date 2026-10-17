@@ -9,9 +9,12 @@
 body {
   background: #000; color: #ccc;
   font-family: 'Courier New', monospace;
-  overflow: hidden; height: 100vh; touch-action: manipulation;
+  overflow: hidden; height: 100vh; width: 100vw;
+  touch-action: manipulation;
 }
-#game { position: relative; width: 100vw; height: 100vh; background: #050505; overflow: hidden; }
+#game { position: relative; width: 100%; height: 100%; background: #050505; overflow: hidden; }
+
+/* Слои графики */
 #scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; }
 #darkness-mask { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 #weather { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
@@ -19,80 +22,79 @@ body {
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 5; }
 #blood-overlay.active { opacity: 1; }
 
+/* Интерфейс (ПОВЕРХ ВСЕГО) */
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 20px; z-index: 20;
-  background: linear-gradient(transparent, rgba(0,0,0,0.9) 20%, rgba(0,0,0,0.95));
+  padding: 20px 15px; z-index: 100;
+  background: linear-gradient(transparent, rgba(0,0,0,0.95) 30%, #000);
   display: flex; flex-direction: column; justify-content: flex-end;
-  max-height: 75vh; pointer-events: none;
+  min-height: 40vh; max-height: 80vh;
+  pointer-events: none;
 }
-#top-hud {
-  position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10;
-}
-#stats, #minimap-box { display: flex; gap: 10px; font-size: 14px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
-.stat-badge { background: rgba(20,0,0,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; }
-#minimap-box { background: rgba(0,0,0,0.7); border: 1px solid #333; padding: 5px; font-size: 12px; color: #888; flex-direction: column; text-align: right; }
-
 #text-box { 
-  font-size: 18px; line-height: 1.5; margin-bottom: 16px; min-height: 60px; 
+  font-size: 18px; line-height: 1.5; margin-bottom: 15px; min-height: 50px; 
   text-shadow: 0 0 6px #000, 0 0 3px #000; pointer-events: auto; color: #e0e0e0;
+  word-wrap: break-word;
 }
-#choices { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; }
+#choices { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; width: 100%; }
 .choice-btn {
-  background: rgba(40, 0, 0, 0.85); border: 1px solid #7a0000; color: #fff;
-  padding: 12px 16px; text-align: left; cursor: pointer;
-  font-family: inherit; font-size: 15px; font-weight: bold;
-  transition: all 0.2s; border-radius: 6px; backdrop-filter: blur(4px);
+  background: rgba(40, 0, 0, 0.9); border: 1px solid #7a0000; color: #fff;
+  padding: 14px 16px; text-align: left; cursor: pointer;
+  font-family: inherit; font-size: 16px; font-weight: bold;
+  transition: all 0.1s; border-radius: 6px; width: 100%;
 }
-.choice-btn:hover { background: rgba(80, 0, 0, 0.95); border-color: #f00; transform: translateX(5px); }
-.choice-btn:active { background: #a00; }
+.choice-btn:hover { background: rgba(80, 0, 0, 1); border-color: #f00; }
+.choice-btn:active { background: #a00; transform: scale(0.98); }
 
-#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 50; }
+/* Верхняя панель (Статы) */
+#top-hud {
+  position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 110; flex-wrap: wrap; gap: 10px;
+}
+#stats, #minimap-box { display: flex; gap: 8px; font-size: 13px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
+.stat-badge { background: rgba(20,0,0,0.9); padding: 5px 10px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 5px; }
+#minimap-box { background: rgba(0,0,0,0.9); border: 1px solid #333; padding: 5px 10px; font-size: 12px; color: #aaa; flex-direction: column; text-align: right; }
+
+/* Эффекты */
+#flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 150; }
 #flash.active { opacity: 1; }
-#shake { position: fixed; inset: 0; pointer-events: none; z-index: 48; }
+#shake { position: fixed; inset: 0; pointer-events: none; z-index: 49; }
 #shake.active { animation: shake 0.3s infinite; }
 @keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-4px,3px); } 50% { transform: translate(3px,-4px); } 75% { transform: translate(-3px,-2px); } }
 
+/* Уведомления и Мобильные кнопки */
+#notify {
+  position: fixed; top: 80px; right: 10px;
+  background: rgba(60,0,0,0.95); border: 1px solid #a00;
+  padding: 10px 16px; color: #fff; font-size: 14px;
+  opacity: 0; transition: opacity 0.3s; pointer-events: none;
+  max-width: 80vw; border-radius: 6px; z-index: 120;
+}
+#notify.active { opacity: 1; }
+
+#touch-controls { position: fixed; bottom: 20px; right: 20px; display: none; gap: 10px; z-index: 105; }
+#touch-controls button {
+  background: rgba(60,0,0,0.9); border: 2px solid #a00; color: #fff;
+  width: 60px; height: 60px; border-radius: 50%; font-size: 20px; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+#touch-controls button span { font-size: 9px; margin-top: 2px; }
+@media (max-width: 768px) { #touch-controls { display: flex; } }
+
+/* МЕНЮ (Главное, Пауза, Настройки и т.д.) */
 #menu-overlay {
   position: fixed; inset: 0; background: rgba(10,0,0,0.98);
   display: none; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px;
-  z-index: 100; padding: 40px 20px; overflow-y: auto;
+  z-index: 200; padding: 40px 20px; overflow-y: auto;
 }
 #menu-overlay.active { display: flex; }
-#menu-overlay h2 { color: #f00; font-size: 28px; margin-bottom: 16px; text-shadow: 0 0 10px #f00; }
+#menu-overlay h2 { color: #f00; font-size: 32px; margin-bottom: 16px; text-shadow: 0 0 10px #f00; text-align: center; }
 #menu-overlay button {
   background: #1a0000; border: 1px solid #5a0000; color: #ccc;
   padding: 12px 32px; cursor: pointer; font-family: inherit; font-size: 16px;
   min-width: 240px; border-radius: 6px; transition: background 0.2s; margin-bottom: 5px;
 }
 #menu-overlay button:hover { background: #3a0000; color: #fff; border-color: #a00; }
-
-#notify {
-  position: fixed; top: 70px; right: 20px;
-  background: rgba(60,0,0,0.95); border: 1px solid #a00;
-  padding: 10px 16px; color: #fff; font-size: 14px;
-  opacity: 0; transition: opacity 0.3s; pointer-events: none;
-  max-width: 300px; border-radius: 6px; z-index: 101;
-  box-shadow: 0 0 10px rgba(255,0,0,0.3);
-}
-#notify.active { opacity: 1; }
-
-#touch-controls { position: fixed; bottom: 20px; right: 20px; display: none; gap: 10px; z-index: 30; }
-#touch-controls button {
-  background: rgba(60,0,0,0.8); border: 2px solid #a00; color: #fff;
-  width: 60px; height: 60px; border-radius: 50%; font-size: 24px; cursor: pointer;
-  box-shadow: 0 0 10px rgba(0,0,0,0.8); flex-direction: column; display: flex; align-items: center; justify-content: center;
-}
-#touch-controls button span { font-size: 10px; }
-
-@media (max-width: 768px) {
-  #touch-controls { display: flex; }
-  #ui { padding: 15px; max-height: 80vh; }
-  .choice-btn { padding: 14px 16px; font-size: 16px; }
-  #text-box { font-size: 16px; }
-  #stats { font-size: 12px; }
-  #minimap-box { display: none; }
-}
+#menu-overlay button:active { background: #500; }
 
 #inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; width: 100%; max-width: 600px; margin-bottom: 20px; }
 .inv-item { background: rgba(40,0,0,0.5); border: 1px solid #5a0000; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px; color: #f88; cursor: pointer; transition: 0.2s; }
@@ -102,6 +104,12 @@ body {
 .journal-item, .ach-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
 .journal-item b { color: #f44; font-size: 16px; }
 .ach-item.unlocked { color: #8f8; }
+
+@media (min-width: 769px) {
+  #ui { padding: 20px 50px; min-height: 30vh; }
+  #text-box { font-size: 20px; }
+  .choice-btn { max-width: 600px; }
+}
 </style>
 </head>
 <body>
@@ -129,22 +137,22 @@ body {
   </div>
 
   <div id="ui">
-    <div id="text-box"></div>
+    <div id="text-box">Нажмите "Новая игра" в меню...</div>
     <div id="choices"></div>
   </div>
 
   <div id="touch-controls">
-    <button onclick="toggleMenu()">☰<span>МЕНЮ</span></button>
+    <button onclick="togglePauseMenu()">☰<span>МЕНЮ</span></button>
     <button onclick="useFlashlight()">🔦<span>СВЕТ</span></button>
     <button onclick="useWeapon()">🔪<span>НОЖ</span></button>
   </div>
 
   <div id="flash"></div>
   <div id="notify"></div>
+  
   <div id="menu-overlay">
     <h2 id="menu-title">МЕНЮ</h2>
     <div id="menu-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
-    <button onclick="closeMenu()" style="margin-top: 20px; background: #500;">Закрыть</button>
   </div>
 </div>
 
@@ -160,9 +168,10 @@ const textBox = document.getElementById('text-box');
 const choicesBox = document.getElementById('choices');
 
 let state = { 
-  scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
+  scene: 'menu', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
   difficulty: 'normal', weaponDurability: 3, karma: 0, location: 'Комната', currentFloor: 1,
-  endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false
+  endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false,
+  gameStarted: false
 };
 let soundOn = true, typeSpeed = 25, fontSize = 18;
 let drawInterval = null;
@@ -212,7 +221,7 @@ const audio = {
 
 // ========== КРОВЬ / ЭФФЕКТЫ ==========
 const gore = {
-  particles: [], puddles: [], footprints: [],
+  particles: [], puddles: [],
   spawn(x, y, count=20) {
     for (let i=0;i<count;i++) this.particles.push({ x, y, vx:(Math.random()-0.5)*10, vy:(Math.random()-0.5)*10-2, life:60+Math.random()*40, size:2+Math.random()*5 });
   },
@@ -291,7 +300,7 @@ const karma = {
   add(n) { this.value += n; document.getElementById('karma').textContent = this.value; }
 };
 
-function useFlashlight() { state.flashlightOn = !state.flashlightOn; notify(state.flashlightOn ? 'Фонарик ВКЛ' : 'Фонарик ВЫКЛ'); }
+function useFlashlight() { if(!state.gameStarted || state.paused) return; state.flashlightOn = !state.flashlightOn; notify(state.flashlightOn ? 'Фонарик ВКЛ' : 'Фонарик ВЫКЛ'); }
 
 function updateBloodOverlay() {
   const b = document.getElementById('blood-overlay');
@@ -312,6 +321,7 @@ const inventory = {
 
 // ========== ОРУЖИЕ ==========
 function useWeapon() {
+  if(!state.gameStarted || state.paused) return;
   let weapon = inventory.has('топор') ? 'топор' : inventory.has('труба') ? 'труба' : inventory.has('нож') ? 'нож' : null;
   if (!weapon) { notify('Нет оружия'); return; }
   if (staminaSys.value < 20) { notify('Нет сил для удара!'); return; }
@@ -385,6 +395,7 @@ const stats = { deaths: 0, endings: [], playtime: 0,
   render() { document.getElementById('minimap-loc').textContent = state.location; }
 };
 setInterval(() => {
+  if(!state.gameStarted || state.paused) return;
   stats.playtime++;
   if (state.speedrunMode) state.speedrunTime++;
   if (stats.playtime >= 300) achievements.unlock('night_owl');
@@ -393,7 +404,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v8',
+  key: 'bloodhorror_ultimate_v10',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -405,10 +416,10 @@ const save = {
     }));
   },
   load() { const d = localStorage.getItem(this.key); return d ? JSON.parse(d) : null; },
-  clear() { localStorage.removeItem(this.key); }
+  clear() { localStorage.removeItem(this.key); },
+  exists() { return this.load() !== null; }
 };
 function saveGame() { save.save(); notify('💾 Сохранено'); }
-function loadGame() { const d = save.load(); if (d) { loadState(d); closeMenu(); notify('Загружено'); } else notify('Пусто'); }
 function loadState(d) {
   state.scene = d.scene || 'start'; state.hp = d.hp || 100; state.battery = d.battery ?? 100; staminaSys.value = d.stamina ?? 100;
   state.difficulty = d.difficulty || 'normal'; state.weaponDurability = d.weaponDurability ?? 3;
@@ -424,70 +435,122 @@ function loadState(d) {
   document.getElementById('stamina').textContent = Math.floor(staminaSys.value);
   document.getElementById('karma').textContent = karma.value;
   updateEnemyMultiplier();
-  if (scenes[state.scene]) goTo(state.scene);
 }
-function newGame() { save.clear(); location.reload(); }
+
+function startNewGame() {
+  save.clear();
+  state.gameStarted = true;
+  state.hp = 100; state.battery = 100; staminaSys.value = 100; state.karma = 0; karma.value = 0;
+  sanity.set(100); inventory.items = []; document.getElementById('inv-count').textContent = 0;
+  stats.deaths = 0; stats.endings = []; stats.playtime = 0; journal.notes = [];
+  closeMenu();
+  goTo('start');
+}
+
+function continueGame() {
+  const d = save.load();
+  if (d) {
+    loadState(d);
+    state.gameStarted = true;
+    closeMenu();
+    goTo(state.scene);
+    notify('Загружено');
+  } else {
+    notify('Сохранение не найдено');
+  }
+}
 
 function updateEnemyMultiplier() {
   enemyMultiplier = state.difficulty === 'easy' ? 0.6 : state.difficulty === 'hard' ? 1.8 : 1;
 }
 
 // ========== МЕНЮ ==========
-function toggleMenu() {
-  state.paused = !state.paused;
-  if (state.paused) renderMenu('main'); else closeMenu();
+function closeMenu() { 
+  document.getElementById('menu-overlay').classList.remove('active'); 
+  if(state.gameStarted) state.paused = false; 
 }
-function closeMenu() { document.getElementById('menu-overlay').classList.remove('active'); state.paused = false; }
+
 function renderMenu(type) {
   const title = document.getElementById('menu-title'), content = document.getElementById('menu-content');
-  document.getElementById('menu-overlay').classList.add('active'); content.innerHTML = '';
+  document.getElementById('menu-overlay').classList.add('active'); 
+  content.innerHTML = '';
 
   if (type === 'main') {
+    title.textContent = 'BLOOD HORROR';
+    const hasSave = save.exists();
+    content.innerHTML = `
+      <button onclick="startNewGame()" style="background: #500;">Новая игра</button>
+      ${hasSave ? `<button onclick="continueGame()">Продолжить</button>` : ''}
+      <button onclick="renderMenu('settings')">Настройки</button>
+      <button onclick="renderMenu('achievements')">Достижения</button>
+      <button onclick="renderMenu('about')">Об игре</button>
+    `;
+  } 
+  else if (type === 'pause') {
     title.textContent = 'ПАУЗА';
     content.innerHTML = `
       <button onclick="closeMenu()">Продолжить</button>
       <button onclick="saveGame()">Сохранить</button>
-      <button onclick="loadGame()">Загрузить</button>
       <button onclick="renderMenu('inventory')">Инвентарь</button>
       <button onclick="renderMenu('journal')">Дневник</button>
-      <button onclick="renderMenu('achievements')">Достижения</button>
       <button onclick="renderMenu('settings')">Настройки</button>
-      <button onclick="renderMenu('speedrun')">Спидран</button>
+      <button onclick="renderMenu('main')" style="color:#f44; margin-top:20px;">В главное меню</button>
     `;
-  } else if (type === 'inventory') {
+  }
+  else if (type === 'inventory') {
     title.textContent = 'ИНВЕНТАРЬ';
     const grid = document.createElement('div'); grid.id = 'inventory-grid';
     inventory.items.forEach(item => {
       const div = document.createElement('div'); div.className = 'inv-item'; div.textContent = item;
       div.onclick = () => { useItem(item); renderMenu('inventory'); }; grid.appendChild(div);
     });
-    if(inventory.items.length === 0) grid.innerHTML = '<p style="color:#666;">Пусто</p>';
+    if(inventory.items.length === 0) grid.innerHTML = '<p style="color:#666; width:100%; text-align:center;">Пусто</p>';
     content.appendChild(grid);
     content.innerHTML += `<div class="inv-actions"><button onclick="renderMenu('craft')">Крафт</button></div>`;
-  } else if (type === 'craft') {
+  } 
+  else if (type === 'craft') {
     title.textContent = 'КРАФТ';
     content.innerHTML = `<div style="text-align:left; color:#aaa; margin-bottom:20px;"><p>Бинт + Таблетки = Аптечка</p><p>Нож + Камень = Заточенный нож</p></div>
-      <button onclick="if(inventory.craft('бинт','таблетки','аптечка')){achievements.unlock('crafter'); renderMenu('inventory');} else notify('Нет')">Аптечка</button>`;
-  } else if (type === 'settings') {
+      <button onclick="if(inventory.craft('бинт','таблетки','аптечка')){achievements.unlock('crafter'); renderMenu('inventory');} else notify('Нет')">Аптечка</button>
+      <button onclick="renderMenu('inventory')">Назад</button>`;
+  } 
+  else if (type === 'settings') {
     title.textContent = 'НАСТРОЙКИ';
     content.innerHTML = `
       <button onclick="soundOn=!soundOn; renderMenu('settings')">Звук: ${soundOn ? 'ВКЛ' : 'ВЫКЛ'}</button>
       <button onclick="typeSpeed = typeSpeed===25?50:25; renderMenu('settings')">Скорость: ${typeSpeed}мс</button>
       <button onclick="state.colorblind=!state.colorblind; sanity.set(sanity.value); renderMenu('settings')">Дальтонизм: ${state.colorblind ? 'ВКЛ' : 'ВЫКЛ'}</button>
+      ${state.gameStarted ? `<button onclick="renderMenu('pause')">Назад</button>` : `<button onclick="renderMenu('main')">Назад</button>`}
     `;
-  } else if (type === 'journal') {
+  } 
+  else if (type === 'journal') {
     title.textContent = 'ДНЕВНИК';
     let html = ''; journal.notes.forEach(n => { html += `<div class="journal-item"><b>${n.title}</b><br>${n.text}</div>`; });
-    content.innerHTML = `<div id="journal-list">${html || '<p style="color:#666;">Пусто</p>'}</div>`;
-  } else if (type === 'achievements') {
+    content.innerHTML = `<div id="journal-list">${html || '<p style="color:#666;">Пусто</p>'}</div><button onclick="renderMenu('pause')">Назад</button>`;
+  } 
+  else if (type === 'achievements') {
     title.textContent = 'ДОСТИЖЕНИЯ';
     let html = ''; for (let id in achievements.defs) html += `<div class="ach-item ${achievements.unlocked.includes(id)?'unlocked':''}">${achievements.unlocked.includes(id)?'✅':'⬜'} ${achievements.defs[id]}</div>`;
-    content.innerHTML = `<div id="ach-list">${html}</div>`;
-  } else if (type === 'speedrun') {
-    title.textContent = 'СПИДРАН';
-    content.innerHTML = `<p style="color:#aaa; margin-bottom:20px;">Время: ${state.speedrunTime}с</p>
-      <button onclick="state.speedrunMode=true; state.speedrunTime=0; goTo('start'); closeMenu();">Начать заново</button>`;
+    content.innerHTML = `<div id="ach-list">${html}</div><button onclick="renderMenu(state.gameStarted?'pause':'main')">Назад</button>`;
   }
+  else if (type === 'about') {
+    title.textContent = 'ОБ ИГРЕ';
+    content.innerHTML = `
+      <div style="max-width:500px; text-align:left; color:#aaa; line-height:1.6; margin-bottom:20px;">
+        <p><b>Blood Horror</b> — психологический хоррор, где вам предстоит выживать в темных коридорах, собирать записки и принимать сложные решения.</p>
+        <p>Управление: кнопки выбора, фонарик (тратит заряд), оружие (тратит стамину).</p>
+        <p>Собирайте записки, чтобы открыть истинную концовку!</p>
+        <p>Версия: Ultimate v10</p>
+      </div>
+      <button onclick="renderMenu('main')">Назад</button>
+    `;
+  }
+}
+
+function togglePauseMenu() {
+  if (!state.gameStarted) return;
+  if (state.paused) closeMenu();
+  else { state.paused = true; renderMenu('pause'); }
 }
 
 function useItem(item) {
@@ -498,7 +561,16 @@ function useItem(item) {
 
 // ========== СЦЕНЫ / РЕНДЕР ==========
 function showText(t) { typewriter.write(t); }
-function showChoices(list) { choicesBox.innerHTML = ''; list.forEach(c => { const b = document.createElement('button'); b.className = 'choice-btn'; b.textContent = c.label; b.onclick = c.action; choicesBox.appendChild(b); }); }
+function showChoices(list) { 
+  choicesBox.innerHTML = ''; 
+  list.forEach(c => { 
+    const b = document.createElement('button'); 
+    b.className = 'choice-btn'; 
+    b.textContent = c.label; 
+    b.onclick = c.action; 
+    choicesBox.appendChild(b); 
+  }); 
+}
 function clearChoices() { choicesBox.innerHTML = ''; }
 
 function renderBackground(sceneId) {
@@ -570,7 +642,8 @@ const scenes = {
       { label: 'Спрятаться', action: () => { enemy.start(10); goTo('hide'); } },
       { label: 'Открыть ключом', action: () => { if (inventory.has('ключ')) goTo('corridor'); else notify('Нужен ключ'); }},
       { label: 'На 2 этаж', action: () => goTo('floor2') },
-      { label: 'На крышу', action: () => goTo('roof') }
+      { label: 'На крышу', action: () => goTo('roof') },
+      { label: 'В меню', action: togglePauseMenu }
     ]);
   },
   hide: () => {
@@ -586,6 +659,7 @@ const scenes = {
       { label: 'В коридор', action: () => goTo('corridor') },
       { label: 'На 2 этаж', action: () => goTo('floor2') },
       { label: 'На крышу', action: () => goTo('roof') },
+      { label: 'В меню', action: togglePauseMenu }
     ]);
   },
   corridor: () => {
@@ -594,7 +668,8 @@ const scenes = {
     showChoices([
       { label: 'В подвал', action: () => { sanity.decrease(15); goTo('basement'); } }, 
       { label: 'Выживший', action: () => goTo('npc') },
-      { label: 'Назад', action: () => goTo('safe') }
+      { label: 'Назад', action: () => goTo('safe') },
+      { label: 'В меню', action: togglePauseMenu }
     ]);
   },
   npc: () => {
@@ -616,6 +691,7 @@ const scenes = {
       { label: 'Взять таблетки', action: () => { inventory.add('таблетки'); goTo('safe'); } },
       { label: 'Поставить ловушку', action: () => { inventory.add('капкан'); notify('Капкан установлен'); goTo('safe'); } },
       { label: 'Спуститься глубже (Босс)', action: () => { enemy.start(5); goTo('boss'); } },
+      { label: 'В меню', action: togglePauseMenu }
     ]);
   },
   floor2: () => {
@@ -625,13 +701,14 @@ const scenes = {
     showChoices([
       { label: 'Открыть шкаф', action: () => { inventory.add('топор'); notify('Найден топор!'); goTo('floor2'); } },
       { label: 'Вниз', action: () => goTo('safe') },
+      { label: 'В меню', action: togglePauseMenu }
     ]);
   },
   roof: () => {
     renderBackground('roof'); state.location = 'Крыша';
     showText('Крыша. Идёт дождь. Внизу город.');
     sanity.increase(10);
-    showChoices([{ label: 'Вниз', action: () => goTo('safe') }]);
+    showChoices([{ label: 'Вниз', action: () => goTo('safe') }, { label: 'В меню', action: togglePauseMenu }]);
   },
   boss: () => {
     renderBackground('boss'); state.location = '???';
@@ -666,31 +743,31 @@ const scenes = {
     showText('Оно хватает тебя...');
     if (!stats.endings.includes('caught')) stats.endings.push('caught');
     achievements.unlock('caught');
-    showChoices([{ label: 'Заново', action: () => newGame() }]);
+    showChoices([{ label: 'В главное меню', action: () => { state.gameStarted = false; renderMenu('main'); } }]);
   },
   death: () => {
     renderBackground('default');
     showText('Ты не выжил.');
     if (!stats.endings.includes('death')) stats.endings.push('death');
-    showChoices([{ label: 'Заново', action: () => newGame() }]);
+    showChoices([{ label: 'В главное меню', action: () => { state.gameStarted = false; renderMenu('main'); } }]);
   },
   ending_escape: () => {
     renderBackground('roof'); audio.victory();
     showText('Ты сбежал. Но тень осталась.');
     if (!stats.endings.includes('escape')) stats.endings.push('escape');
     if (state.speedrunMode) achievements.unlock('speedrunner');
-    showChoices([{ label: 'Заново', action: () => newGame() }]);
+    showChoices([{ label: 'В главное меню', action: () => { state.gameStarted = false; renderMenu('main'); } }]);
   },
   ending_echo: () => {
     renderBackground('default');
     showText('Ты стал Эхом.');
-    showChoices([{ label: 'Заново', action: () => newGame() }]);
+    showChoices([{ label: 'В главное меню', action: () => { state.gameStarted = false; renderMenu('main'); } }]);
   },
   ending_true: () => {
     renderBackground('default'); audio.victory();
     showText('Ты собрал все записки. Ты узнал правду. Это был не сон. Это было чистилище.');
     achievements.unlock('true_ending');
-    showChoices([{ label: 'Заново', action: () => newGame() }]);
+    showChoices([{ label: 'В главное меню', action: () => { state.gameStarted = false; renderMenu('main'); } }]);
   }
 };
 
@@ -700,11 +777,11 @@ function goTo(name) { if (scenes[name]) { state.scene = name; scenes[name](); sa
 let last = performance.now();
 function loop(now) {
   const dt = (now - last) / 1000; last = now;
-  if (!state.paused) {
+  if (state.gameStarted && !state.paused) {
     gore.update();
     enemy.update(dt); 
     batterySystem.drain();
-    staminaSys.regen(); // Стамина восстанавливается в реальном времени
+    staminaSys.regen();
     updateBloodOverlay();
   }
   requestAnimationFrame(loop);
@@ -712,11 +789,8 @@ function loop(now) {
 requestAnimationFrame(loop);
 
 // ========== СТАРТ ==========
-const loaded = save.load();
-if (loaded && loaded.scene && scenes[loaded.scene]) loadState(loaded);
-else goTo('start');
-setInterval(() => save.save(), 5000);
-window.addEventListener('beforeunload', () => save.save());
+// При загрузке страницы показываем главное меню
+renderMenu('main');
 audio.ambient();
 </script>
 </body>
