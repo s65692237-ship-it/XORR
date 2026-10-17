@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Blood Horror: Ultimate - Part 2</title>
+<title>Blood Horror: Ultimate - Final</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
@@ -24,6 +24,14 @@ body {
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 6; }
 #blood-overlay.active { opacity: 1; }
 
+/* Скример (Jump Scare) */
+#jumpscare {
+    position: fixed; inset: 0; background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%"><rect width="100%" height="100%" fill="%23000"/><circle cx="50%" cy="50%" r="30%" fill="%23f00"/><circle cx="40%" cy="45%" r="5%" fill="%23000"/><circle cx="60%" cy="45%" r="5%" fill="%23000"/></svg>') center/cover; 
+    z-index: 1000; display: none; opacity: 1;
+}
+#jumpscare.active { display: block; animation: scareAnim 0.5s; }
+@keyframes scareAnim { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 0; } }
+
 /* Эффект телефона */
 #phone-ui {
     position: absolute; top: 10%; left: 50%; transform: translateX(-50%);
@@ -32,7 +40,7 @@ body {
     box-shadow: 0 0 30px rgba(0,0,0,0.8);
 }
 #phone-ui.active { display: flex; }
-#phone-header { background: #111; padding: 10px; text-align: center; font-size: 12px; border-bottom: 1px solid #333; }
+#phone-header { background: #111; padding: 10px; text-align: center; font-size: 12px; border-bottom: 1px solid #333; display: flex; justify-content: space-between; }
 #phone-chat { flex: 1; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
 .chat-msg { background: #222; padding: 8px 12px; border-radius: 10px; font-size: 12px; max-width: 80%; }
 .chat-msg.them { align-self: flex-start; border-bottom-left-radius: 0; }
@@ -187,8 +195,13 @@ body {
   <div id="shake"></div>
   <div id="transition-text"></div>
   
+  <div id="jumpscare"></div>
+
   <div id="phone-ui">
-    <div id="phone-header">Анонимный чат</div>
+    <div id="phone-header">
+        <span>Анонимный чат</span>
+        <span id="phone-battery">🔋 100%</span>
+    </div>
     <div id="phone-chat"></div>
   </div>
 
@@ -198,6 +211,7 @@ body {
       <span class="stat-badge">🧠 <span id="sanity">100</span></span>
       <span class="stat-badge">🔋 <span id="battery">100</span></span>
       <span class="stat-badge">⚡ <span id="stamina">100</span></span>
+      <span class="stat-badge">🔊 <span id="noise">0</span></span>
       <span class="stat-badge">⚖️ <span id="karma">0</span></span>
       <span class="stat-badge">🎒 <span id="inv-count">0</span></span>
     </div>
@@ -271,7 +285,8 @@ const audio = {
   echo() { this.tone(200, 0.4, 'sawtooth', 0.08); setTimeout(() => this.tone(180, 0.4, 'sawtooth', 0.06), 200); },
   hit() { this.tone(150, 0.2, 'square', 0.15); },
   victory() { this.tone(400, 0.2, 'sine', 0.1); setTimeout(() => this.tone(600, 0.2, 'sine', 0.1), 200); setTimeout(() => this.tone(800, 0.4, 'sine', 0.1), 400); },
-  phoneVibrate() { this.tone(150, 0.1, 'square', 0.2); setTimeout(() => this.tone(150, 0.1, 'square', 0.2), 200); }
+  phoneVibrate() { this.tone(150, 0.1, 'square', 0.2); setTimeout(() => this.tone(150, 0.1, 'square', 0.2), 200); },
+  noise() { this.tone(300, 0.05, 'sawtooth', 0.1); } // Звук шума
 };
 
 // ========== СОСТОЯНИЕ ==========
@@ -291,10 +306,10 @@ const phoneUi = document.getElementById('phone-ui');
 const phoneChat = document.getElementById('phone-chat');
 
 let state = { 
-  scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100,
+  scene: 'start', hp: 100, paused: false, battery: 100, flashlightOn: false, stamina: 100, noise: 0,
   difficulty: 'normal', weaponDurability: 3, karma: 0, location: 'Комната', currentFloor: 1,
   endlessMode: false, endlessScore: 0, endlessWave: 1, speedrunMode: false, speedrunTime: 0, colorblind: false,
-  savedSurvivor: false
+  savedSurvivor: false, phoneBattery: 100
 };
 let soundOn = true, typeSpeed = 25;
 let drawInterval = null;
@@ -316,14 +331,13 @@ function notify(msg) {
   if (navigator.vibrate) navigator.vibrate(50);
 }
 
-// ========== ЛОГИКА ТЕЛЕФОНА (Вторая часть) ==========
-function addPhoneMessage(text, isMe = false, isCreepy = false) {
-    const msg = document.createElement('div');
-    msg.className = `chat-msg ${isMe ? 'me' : 'them'} ${isCreepy ? 'creepy' : ''}`;
-    msg.textContent = text;
-    phoneChat.appendChild(msg);
-    phoneChat.scrollTop = phoneChat.scrollHeight;
-    if (!isMe) audio.phoneVibrate();
+// ========== СКРИМЕР ==========
+function triggerJumpscare() {
+    const js = document.getElementById('jumpscare');
+    js.classList.add('active');
+    audio.scream();
+    if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+    setTimeout(() => js.classList.remove('active'), 500);
 }
 
 // ========== ФАЛЬШИВОЕ ОКНО ==========
@@ -350,7 +364,7 @@ function closeFakeWindow(wasYes) {
   document.getElementById('fake-no-btn').style.top = '0px';
   
   if (wasYes) {
-    sanity.decrease(15); audio.scream(); flash.trigger('#f00');
+    sanity.decrease(15); triggerJumpscare();
     notify("Ты чувствуешь, как что-то коснулось твоей спины...");
   }
 }
@@ -368,7 +382,7 @@ const randomEvents = {
       { text: "Система зависла... (Оно играет с тобой)", type: 'fake_window' }
     ];
     const ev = events[Math.floor(Math.random() * events.length)];
-    if (ev.type === 'scare') { audio.scream(); sanity.decrease(10); flash.trigger('#ff0000'); }
+    if (ev.type === 'scare') { triggerJumpscare(); sanity.decrease(10); flash.trigger('#ff0000'); }
     if (ev.type === 'item_bandage') { inventory.add('бинт'); }
     if (ev.type === 'sanity') { audio.echo(); sanity.decrease(15); }
     if (ev.type === 'battery') { state.battery = Math.min(100, state.battery + 30); document.getElementById('battery').textContent = Math.floor(state.battery); }
@@ -430,6 +444,8 @@ const sanity = {
     if (this.value < 40) document.body.style.filter = state.colorblind ? 'contrast(1.5)' : `hue-rotate(${(40-this.value)*3}deg)`;
     else document.body.style.filter = state.colorblind ? 'contrast(1.5)' : '';
     s.classList.toggle('active', this.value < 30);
+    // Кровь на экране при низком HP (добавлено)
+    if (state.hp < 20) document.getElementById('blood-overlay').classList.add('active');
   },
   decrease(n) { this.set(this.value - n); },
   increase(n) { this.set(this.value + n); }
@@ -439,6 +455,16 @@ const staminaSys = {
   value: 100,
   drain(n) { this.value = Math.max(0, this.value - n); document.getElementById('stamina').textContent = Math.floor(this.value); },
   regen() { if (this.value < 100) { this.value = Math.min(100, this.value + 0.2); document.getElementById('stamina').textContent = Math.floor(this.value); } }
+};
+
+const noiseSys = {
+  value: 0,
+  add(n) { 
+      this.value = Math.min(100, this.value + n); 
+      document.getElementById('noise').textContent = Math.floor(this.value);
+      if (this.value > 50) audio.noise();
+  },
+  reset() { this.value = 0; document.getElementById('noise').textContent = 0; }
 };
 
 const batterySystem = {
@@ -475,7 +501,7 @@ function useWeapon() {
   let weapon = inventory.has('топор') ? 'топор' : inventory.has('труба') ? 'труба' : inventory.has('нож') ? 'нож' : null;
   if (!weapon) { notify('Нет оружия'); return; }
   if (staminaSys.value < 20) { notify('Нет сил для удара!'); return; }
-  staminaSys.drain(20); state.weaponDurability--;
+  staminaSys.drain(20); state.weaponDurability--; noiseSys.add(20);
   audio.hit(); notify(`Удар ${weapon}! Прочность: ${state.weaponDurability}`);
   if (state.weaponDurability <= 0) { notify('Оружие сломалось!'); inventory.remove(weapon); }
   if (enemy.active) { enemy.stop(); notify('Враг отступил!'); }
@@ -494,7 +520,7 @@ const enemy = {
     else if (this.timer < 10 && Math.random() < 0.05) audio.heartbeat();
   },
   onCatch() {
-    flash.trigger('#ff0000'); audio.scream();
+    flash.trigger('#ff0000'); triggerJumpscare();
     if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     sanity.decrease(30); state.hp -= 40;
     document.getElementById('hp').textContent = Math.max(0, state.hp);
@@ -534,7 +560,7 @@ const journal = {
 
 const achievements = {
   unlocked: [],
-  defs: { 'first_death': 'Смерть', 'escape': 'Сбежал', 'caught': 'Пойман', 'true_ending': 'Истина', 'good_samaritan': 'Добряк', 'crafter': 'Крафтер', 'journalist': 'Архивист', 'night_owl': 'Ночной житель', 'speedrunner': 'Спидраннер', 'endless_10': 'Кошмар 10 волн', 'part2_start': 'Пробуждение' },
+  defs: { 'first_death': 'Смерть', 'escape': 'Сбежал', 'caught': 'Пойман', 'true_ending': 'Истина', 'good_samaritan': 'Добряк', 'crafter': 'Крафтер', 'journalist': 'Архивист', 'night_owl': 'Ночной житель', 'speedrunner': 'Спидраннер', 'endless_10': 'Кошмар 10 волн', 'part2_start': 'Пробуждение', 'part3_start': 'Серверная' },
   unlock(id) { if (!this.unlocked.includes(id) && this.defs[id]) { this.unlocked.push(id); notify('🏆 ' + this.defs[id]); audio.pickup(); } }
 };
 
@@ -551,7 +577,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v21',
+  key: 'bloodhorror_ultimate_v22',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -559,7 +585,7 @@ const save = {
       sanity: sanity.value, inv: inventory.items, location: state.location, floor: state.currentFloor,
       stats: { deaths: stats.deaths, endings: stats.endings, playtime: stats.playtime },
       sound: soundOn, typeSpeed, colorblind: state.colorblind, savedSurvivor: state.savedSurvivor,
-      journal: journal.notes, achievements: achievements.unlocked
+      journal: journal.notes, achievements: achievements.unlocked, phoneBattery: state.phoneBattery
     }));
   },
   load() { const d = localStorage.getItem(this.key); return d ? JSON.parse(d) : null; },
@@ -572,6 +598,7 @@ function loadState(d) {
   state.endlessScore = d.endlessScore || 0; karma.value = d.karma || 0;
   state.location = d.location || 'Комната'; state.currentFloor = d.floor || 1;
   state.colorblind = d.colorblind || false; state.savedSurvivor = d.savedSurvivor || false;
+  state.phoneBattery = d.phoneBattery || 100;
   sanity.set(d.sanity ?? 100); inventory.items = d.inv || []; document.getElementById('inv-count').textContent = inventory.items.length;
   if (d.stats) { stats.deaths = d.stats.deaths || 0; stats.endings = d.stats.endings || []; stats.playtime = d.stats.playtime || 0; }
   soundOn = d.sound ?? true; typeSpeed = d.typeSpeed ?? 25;
@@ -652,9 +679,9 @@ function renderMenu(type) {
     menuContent.innerHTML = `
       <div style="max-width:400px; text-align:left; color:#aaa; line-height:1.6; margin-bottom:20px;">
         <p><b>Blood Horror: Ultimate</b></p>
-        <p>Ты просыпаешься в комнате, не помня, как здесь оказался. Твоя цель — выбраться, но тьма не хочет тебя отпускать.</p>
-        <p><b>Механики:</b> Следи за рассудком, собирай записки, используй фонарик и оружие. Ищи подсказки в случайных событиях.</p>
-        <p><b>Вторая часть:</b> После побега игра не заканчивается. Проснувшись дома, ты поймешь, что это было не просто сном.</p>
+        <p>Три части кошмара. От комнаты до серверной.</p>
+        <p><b>Механики:</b> Шум, рассудок, фонарик, Эхо. Собирай записки, чтобы узнать правду.</p>
+        <p><b>Внимание:</b> Игра содержит резкие звуки и скримеры.</p>
       </div>
       <button onclick="renderMenu('pause')">Назад</button>
     `;
@@ -716,7 +743,8 @@ function renderBackground(sceneId) {
     start: '#2a2520', look_around: '#2a2520', corner: '#3a1010', door: '#1a1a22', 
     corridor: '#101015', basement: '#200808', floor2: '#1a1a20', roof: '#0a0d18', 
     default: '#151515', endless: '#250000',
-    part2: '#1a1a25' // Цвет для 2 части
+    part2: '#1a1a25',
+    part3_server: '#001100' // Цвет для серверной
   };
   const bgCol = colors[sceneId] || colors.default;
 
@@ -748,7 +776,18 @@ function renderBackground(sceneId) {
     }
 
     // 4. ДЕТАЛИ
-    if (sceneId === 'start' || sceneId === 'look_around') {
+    if (sceneId === 'part3_server') {
+        // Ряды серверов
+        for (let i = 0; i < 3; i++) {
+            let sx = canvas.width * 0.2 + i * (canvas.width * 0.2);
+            ctx.fillStyle = '#111'; ctx.fillRect(sx, wallTop + 20, canvas.width * 0.15, wallBottom - wallTop - 20);
+            // Мигающие лампочки
+            for (let j = 0; j < 20; j++) {
+                ctx.fillStyle = Math.random() > 0.5 ? '#0f0' : '#f00';
+                ctx.fillRect(sx + 10, wallTop + 40 + j * 15, 5, 5);
+            }
+        }
+    } else if (sceneId === 'start' || sceneId === 'look_around') {
         const wx = canvas.width * 0.7, wy = wallTop + 40, ww = canvas.width * 0.15, wh = canvas.height * 0.2;
         ctx.fillStyle = '#050a15'; ctx.fillRect(wx, wy, ww, wh);
         ctx.fillStyle = '#ddd'; ctx.beginPath(); ctx.arc(wx + ww*0.7, wy + wh*0.3, 15, 0, Math.PI*2); ctx.fill();
@@ -761,15 +800,13 @@ function renderBackground(sceneId) {
         ctx.fillStyle = '#8a7a5a'; ctx.beginPath(); ctx.arc(dx + dw - 15, dy + dh*0.5, 6, 0, Math.PI*2); ctx.fill(); ctx.strokeStyle = '#000'; ctx.stroke();
     } 
     else if (sceneId === 'part2') {
-        // Окно с жалюзи
         const wx = canvas.width * 0.2, wy = wallTop + 50, ww = canvas.width * 0.2, wh = canvas.height * 0.25;
         ctx.fillStyle = '#222'; ctx.fillRect(wx, wy, ww, wh);
         for (let i = 0; i < wh; i += 10) { ctx.fillStyle = i % 20 === 0 ? '#111' : '#333'; ctx.fillRect(wx, wy + i, ww, 5); }
-        // Кровать
         const bx = canvas.width * 0.5, by = wallBottom - 60, bw = canvas.width * 0.3, bh = 80;
         ctx.fillStyle = '#111'; ctx.fillRect(bx, by, bw, bh);
-        ctx.fillStyle = '#300'; ctx.fillRect(bx + 10, by + 10, bw - 20, bh - 20); // Одеяло
-        ctx.fillStyle = '#fff'; ctx.fillRect(bx + 10, by - 10, 40, 20); // Подушка
+        ctx.fillStyle = '#300'; ctx.fillRect(bx + 10, by + 10, bw - 20, bh - 20);
+        ctx.fillStyle = '#fff'; ctx.fillRect(bx + 10, by - 10, 40, 20);
     }
     else if (sceneId === 'corridor') {
         if (Math.random() > 0.1) {
@@ -805,7 +842,7 @@ function renderBackground(sceneId) {
     // 5. ТЬМА
     dctx.clearRect(0, 0, darkCanvas.width, darkCanvas.height);
     let baseDarkness = 0.65; 
-    if (['start', 'safe', 'part2'].includes(sceneId)) baseDarkness = 0.3; 
+    if (['start', 'safe', 'part2', 'part3_server'].includes(sceneId)) baseDarkness = 0.3; 
     
     dctx.fillStyle = `rgba(0,0,0,${baseDarkness})`; dctx.fillRect(0, 0, darkCanvas.width, darkCanvas.height);
     
@@ -826,13 +863,15 @@ function renderBackground(sceneId) {
 function goTo(name) { 
     if (scenes[name]) { 
         state.scene = name; 
-        const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь', part2: 'Квартира (Часть 2)' };
+        const locNames = { start: 'Комната', look_around: 'Угол', corner: 'Тело', door: 'Дверь', corridor: 'Коридор', basement: 'Подвал', floor2: '2 Этаж', roof: 'Крыша', boss: 'Финал', endless: 'Кошмар', library: 'Библиотека', survivor_camp: 'Лагерь', part2: 'Квартира', part2_phone: 'Телефон', part2_choice: 'Диалог', part3_enter: 'Подвал (Спуск)', part3_server: 'Серверная' };
         if (locNames[name]) {
             transText.textContent = locNames[name]; transText.classList.add('show');
             setTimeout(() => transText.classList.remove('show'), 1000);
         }
         scenes[name](); 
-        randomEvents.trigger(); 
+        if (name !== 'part2_phone' && name !== 'part2_choice') {
+            randomEvents.trigger(); 
+        }
         save.save(); 
     } 
 }
@@ -1035,6 +1074,11 @@ const scenes = {
     renderBackground('part2'); state.location = 'Квартира (Телефон)';
     phoneUi.classList.add('active');
     
+    // Тратим заряд телефона
+    state.phoneBattery = Math.max(0, state.phoneBattery - 5);
+    document.getElementById('phone-battery').textContent = `🔋 ${state.phoneBattery}%`;
+    if (state.phoneBattery <= 0) { phoneUi.classList.remove('active'); notify("Телефон сел! Ты не можешь читать сообщения."); return; }
+
     if (phoneChat.children.length === 0) {
         addPhoneMessage("Экран загорается. У тебя 1 непрочитанное сообщение в мессенджере.");
         setTimeout(() => {
@@ -1072,10 +1116,8 @@ const scenes = {
             setTimeout(() => {
                 addPhoneMessage("Незнакомец: В подвал твоего дома. Спускайся.", false, true);
                 showText('Телефон выключается. В коридоре слышен скрип открывающейся двери.');
-                showChoices([{ label: 'Выйти в коридор', action: () => {
-                    notify("Это только начало...");
-                    // Здесь можно начать 3 часть, но пока вернем в меню
-                    setTimeout(() => startNewGame(), 3000);
+                showChoices([{ label: 'Выйти в коридор и спуститься в подвал', action: () => {
+                    goTo('part3_enter');
                 }}]);
             }, 1500);
         }},
@@ -1084,8 +1126,44 @@ const scenes = {
             phoneChat.innerHTML = '';
             phoneUi.classList.remove('active');
             showText('Ты блокируешь номер и удаляешь чат. Тишина. Ты думаешь, что все закончилось. Но твое отражение в выключенном экране телефона улыбается тебе.');
+            triggerJumpscare();
             achievements.unlock('caught');
             setTimeout(() => startNewGame(), 4000);
+        }}
+    ]);
+  },
+
+  // --- ТРЕТЬЯ ЧАСТЬ ---
+  part3_enter: () => {
+    renderBackground('basement'); state.location = 'Подвал дома';
+    showText('Ты спускаешься в темный подвал. Воняет сыростью. На стене висит кодовый замок от двери в бомбоубежище.');
+    showChoices([
+        { label: 'Взломать замок (Мини-игра)', action: () => {
+            showText('Нужно подобрать код. На экране замка мелькают цифры.');
+            showChoices([
+                { label: 'Попробовать 1', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
+                { label: 'Попробовать 2', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
+                { label: 'Попробовать 3', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
+                { label: 'Попробовать 4', action: () => { if (Math.random() > 0.8) { goTo('part3_server'); } else { notify('Неверно. Шум усиливается.'); noiseSys.add(30); if (noiseSys.value > 80) { triggerJumpscare(); state.hp -= 50; if (state.hp <= 0) startNewGame(); else goTo('part3_enter'); } else { goTo('part3_enter'); } } }},
+            ]);
+        }},
+        { label: 'Сдаться и уйти', action: () => { notify('Ты не можешь уйти. Оно не отпустит тебя.'); goTo('part3_enter'); } }
+    ]);
+  },
+
+  part3_server: () => {
+    renderBackground('part3_server'); state.location = 'Серверная';
+    achievements.unlock('part3_start');
+    showText('Дверь открывается. Ты заходишь в огромную комнату, заставленную серверами. Они гудят, а на экранах мелькают лица людей. Это место создает кошмары.');
+    showChoices([
+        { label: 'Уничтожить сервера', action: () => {
+            flash.trigger('#f00'); audio.scream();
+            showText('Ты бьешь по серверам. Искры, крики. Экран гаснет. Ты чувствуешь, как тьма отступает. Ты спасся.');
+            setTimeout(() => { alert("Игра пройдена! Но это еще не конец..."); startNewGame(); }, 3000);
+        }},
+        { label: 'Посмотреть на экран', action: () => {
+            showText('На экране ты видишь себя. Но это не ты. Это Эхо. Оно улыбается и говорит: "Добро пожаловать домой".');
+            showChoices([{ label: 'Начать заново', action: () => startNewGame() }]);
         }}
     ]);
   }
@@ -1101,6 +1179,8 @@ function loop(now) {
     batterySystem.drain();
     staminaSys.regen();
     updateBloodOverlay();
+    noiseSys.value = Math.max(0, noiseSys.value - 0.5); // Шум спадает
+    document.getElementById('noise').textContent = Math.floor(noiseSys.value);
 
     if (document.getElementById('fake-window').classList.contains('active')) {
        // Таймер стоит
