@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Blood Horror: Ultimate</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -22,14 +22,14 @@ body {
 #blood-overlay { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.5s; z-index: 5; }
 #blood-overlay.active { opacity: 1; }
 
-/* Интерфейс (ПОВЕРХ ВСЕГО) */
+/* Интерфейс (Текст и Кнопки) */
 #ui {
   position: absolute; bottom: 0; left: 0; right: 0;
-  padding: 20px 15px; z-index: 100;
-  background: linear-gradient(transparent, rgba(0,0,0,0.95) 30%, #000);
+  padding: 20px 15px; z-index: 50;
+  background: linear-gradient(transparent, rgba(0,0,0,0.95) 20%, #000);
   display: flex; flex-direction: column; justify-content: flex-end;
-  min-height: 40vh; max-height: 80vh;
-  pointer-events: none;
+  min-height: 35vh; max-height: 70vh;
+  pointer-events: none; /* Пропускаем клики к кнопкам */
 }
 #text-box { 
   font-size: 18px; line-height: 1.5; margin-bottom: 15px; min-height: 50px; 
@@ -38,7 +38,7 @@ body {
 }
 #choices { display: flex; flex-direction: column; gap: 8px; pointer-events: auto; width: 100%; }
 .choice-btn {
-  background: rgba(40, 0, 0, 0.9); border: 1px solid #7a0000; color: #fff;
+  background: rgba(40, 0, 0, 0.95); border: 1px solid #7a0000; color: #fff;
   padding: 14px 16px; text-align: left; cursor: pointer;
   font-family: inherit; font-size: 16px; font-weight: bold;
   transition: all 0.1s; border-radius: 6px; width: 100%;
@@ -46,13 +46,13 @@ body {
 .choice-btn:hover { background: rgba(80, 0, 0, 1); border-color: #f00; }
 .choice-btn:active { background: #a00; transform: scale(0.98); }
 
-/* Верхняя панель (Статы) */
+/* Верхняя панель (Статы) - опущена вниз, чтобы не мешать */
 #top-hud {
-  position: absolute; top: 10px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 110; flex-wrap: wrap; gap: 10px;
+  position: absolute; top: 15px; left: 10px; right: 10px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; flex-wrap: wrap; gap: 10px;
 }
-#stats, #minimap-box { display: flex; gap: 8px; font-size: 13px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
-.stat-badge { background: rgba(20,0,0,0.9); padding: 5px 10px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 5px; }
-#minimap-box { background: rgba(0,0,0,0.9); border: 1px solid #333; padding: 5px 10px; font-size: 12px; color: #aaa; flex-direction: column; text-align: right; }
+#stats, #minimap-box { display: flex; gap: 6px; font-size: 13px; flex-wrap: wrap; text-shadow: 0 0 4px #000; pointer-events: auto; }
+.stat-badge { background: rgba(20,0,0,0.9); padding: 5px 8px; border-radius: 4px; border: 1px solid #5a0000; color: #fff; display: flex; align-items: center; gap: 4px; }
+#minimap-box { background: rgba(0,0,0,0.9); border: 1px solid #333; padding: 5px 8px; font-size: 12px; color: #aaa; flex-direction: column; text-align: right; }
 
 /* Эффекты */
 #flash { position: fixed; inset: 0; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.1s; z-index: 150; }
@@ -61,9 +61,9 @@ body {
 #shake.active { animation: shake 0.3s infinite; }
 @keyframes shake { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-4px,3px); } 50% { transform: translate(3px,-4px); } 75% { transform: translate(-3px,-2px); } }
 
-/* Уведомления и Мобильные кнопки */
+/* Уведомления */
 #notify {
-  position: fixed; top: 80px; right: 10px;
+  position: fixed; top: 100px; right: 10px;
   background: rgba(60,0,0,0.95); border: 1px solid #a00;
   padding: 10px 16px; color: #fff; font-size: 14px;
   opacity: 0; transition: opacity 0.3s; pointer-events: none;
@@ -71,7 +71,8 @@ body {
 }
 #notify.active { opacity: 1; }
 
-#touch-controls { position: fixed; bottom: 20px; right: 20px; display: none; gap: 10px; z-index: 105; }
+/* Мобильные кнопки */
+#touch-controls { position: fixed; bottom: 20px; right: 20px; display: none; gap: 10px; z-index: 70; }
 #touch-controls button {
   background: rgba(60,0,0,0.9); border: 2px solid #a00; color: #fff;
   width: 60px; height: 60px; border-radius: 50%; font-size: 20px; cursor: pointer;
@@ -80,27 +81,28 @@ body {
 #touch-controls button span { font-size: 9px; margin-top: 2px; }
 @media (max-width: 768px) { #touch-controls { display: flex; } }
 
-/* МЕНЮ (Главное, Пауза, Настройки и т.д.) */
+/* МЕНЮ (Исправлено: теперь строго по центру и перекрывает всё) */
 #menu-overlay {
-  position: fixed; inset: 0; background: rgba(10,0,0,0.98);
-  display: none; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px;
-  z-index: 200; padding: 40px 20px; overflow-y: auto;
+  position: fixed; inset: 0; background: rgba(5, 0, 0, 0.98);
+  display: none; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  z-index: 500; padding: 20px; overflow-y: auto;
 }
 #menu-overlay.active { display: flex; }
-#menu-overlay h2 { color: #f00; font-size: 32px; margin-bottom: 16px; text-shadow: 0 0 10px #f00; text-align: center; }
+#menu-overlay h2 { color: #f00; font-size: 32px; margin-bottom: 20px; text-shadow: 0 0 15px #f00; text-align: center; }
 #menu-overlay button {
   background: #1a0000; border: 1px solid #5a0000; color: #ccc;
-  padding: 12px 32px; cursor: pointer; font-family: inherit; font-size: 16px;
-  min-width: 240px; border-radius: 6px; transition: background 0.2s; margin-bottom: 5px;
+  padding: 14px 32px; cursor: pointer; font-family: inherit; font-size: 16px;
+  min-width: 260px; border-radius: 6px; transition: background 0.2s; margin-bottom: 5px;
 }
 #menu-overlay button:hover { background: #3a0000; color: #fff; border-color: #a00; }
 #menu-overlay button:active { background: #500; }
 
+/* Инвентарь и списки в меню */
 #inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; width: 100%; max-width: 600px; margin-bottom: 20px; }
 .inv-item { background: rgba(40,0,0,0.5); border: 1px solid #5a0000; padding: 10px; border-radius: 6px; text-align: center; font-size: 14px; color: #f88; cursor: pointer; transition: 0.2s; }
 .inv-item:hover { background: rgba(80,0,0,0.7); border-color: #f00; }
 .inv-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-#journal-list, #ach-list, #records-list { width: 100%; max-width: 600px; text-align: left; margin-bottom: 20px; color: #bbb; }
+#journal-list, #ach-list, #records-list { width: 100%; max-width: 600px; text-align: left; margin-bottom: 20px; color: #bbb; max-height: 50vh; overflow-y: auto; padding-right: 10px; }
 .journal-item, .ach-item { margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px; }
 .journal-item b { color: #f44; font-size: 16px; }
 .ach-item.unlocked { color: #8f8; }
@@ -137,7 +139,7 @@ body {
   </div>
 
   <div id="ui">
-    <div id="text-box">Нажмите "Новая игра" в меню...</div>
+    <div id="text-box">Добро пожаловать...</div>
     <div id="choices"></div>
   </div>
 
@@ -152,7 +154,7 @@ body {
   
   <div id="menu-overlay">
     <h2 id="menu-title">МЕНЮ</h2>
-    <div id="menu-content" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
+    <div id="menu-content" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;"></div>
   </div>
 </div>
 
@@ -404,7 +406,7 @@ setInterval(() => {
 
 // ========== СОХРАНЕНИЕ ==========
 const save = {
-  key: 'bloodhorror_ultimate_v10',
+  key: 'bloodhorror_ultimate_v11',
   save() {
     localStorage.setItem(this.key, JSON.stringify({
       scene: state.scene, hp: state.hp, battery: state.battery, stamina: staminaSys.value, difficulty: state.difficulty,
@@ -506,7 +508,7 @@ function renderMenu(type) {
     });
     if(inventory.items.length === 0) grid.innerHTML = '<p style="color:#666; width:100%; text-align:center;">Пусто</p>';
     content.appendChild(grid);
-    content.innerHTML += `<div class="inv-actions"><button onclick="renderMenu('craft')">Крафт</button></div>`;
+    content.innerHTML += `<div class="inv-actions"><button onclick="renderMenu('craft')">Крафт</button></div><button onclick="renderMenu('pause')">Назад</button>`;
   } 
   else if (type === 'craft') {
     title.textContent = 'КРАФТ';
@@ -540,7 +542,7 @@ function renderMenu(type) {
         <p><b>Blood Horror</b> — психологический хоррор, где вам предстоит выживать в темных коридорах, собирать записки и принимать сложные решения.</p>
         <p>Управление: кнопки выбора, фонарик (тратит заряд), оружие (тратит стамину).</p>
         <p>Собирайте записки, чтобы открыть истинную концовку!</p>
-        <p>Версия: Ultimate v10</p>
+        <p>Версия: Ultimate v11</p>
       </div>
       <button onclick="renderMenu('main')">Назад</button>
     `;
